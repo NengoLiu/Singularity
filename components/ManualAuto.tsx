@@ -3,8 +3,188 @@ import { ros2Connection } from '../libs/ros2Connection';
 import { 
     Power, RotateCcw, RotateCw, Activity, Droplets, Move, GitCommit, 
     ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-    PaintRoller, ArrowLeftRight, Ruler, Layers, Play, Pause, RefreshCw, AlertCircle
+    PaintRoller, ArrowLeftRight, Ruler, Layers, Play, RefreshCw, Box, Axis3d
 } from 'lucide-react';
+
+// --- ROBOT ARM VISUALIZER COMPONENT (CUSTOM KINEMATICS) ---
+const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled: boolean }> = ({ yaw, roll, height, enabled }) => {
+    // Height visual scale factor: 0-8cm maps to 0-40px movement visually
+    const heightOffset = -(height / 8) * 40; 
+
+    return (
+        <div className={`w-full h-80 bg-slate-50 rounded-2xl border border-slate-200 relative overflow-hidden flex items-center justify-center transition-all duration-500 ${!enabled ? 'grayscale opacity-70' : ''}`}>
+            
+            {/* Info Overlay */}
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 pointer-events-none">
+                <div className="flex items-center gap-2 text-sci-blue font-bold text-xs tracking-wider">
+                    <Axis3d size={16} />
+                    <span>REAL-TIME TWIN</span>
+                </div>
+                <div className="text-[10px] text-slate-400">Z-Up Coordinate System</div>
+            </div>
+
+            {/* 3D Scene Container */}
+            <div className="relative w-full h-full perspective-container" style={{ perspective: '1200px' }}>
+                
+                {/* 
+                    World Transform: 
+                    Rotate X to look down at an angle (Isometric-ish).
+                    Translate Y to push it back a bit so "arm towards us" doesn't clip.
+                */}
+                <div className="absolute top-1/2 left-1/2 w-0 h-0" 
+                     style={{ 
+                         transformStyle: 'preserve-3d', 
+                         transform: 'translateZ(-100px) rotateX(60deg) rotateZ(0deg)' 
+                     }}>
+
+                    {/* --- WORLD AXIS HELPER (At Origin) --- */}
+                    <div className="absolute top-0 left-0 w-0 h-0 pointer-events-none">
+                        {/* X Axis (Red) */}
+                        <div className="absolute top-0 left-0 h-0.5 bg-red-500 w-24 origin-left" style={{ transform: 'rotateZ(0deg)' }}></div>
+                        <div className="absolute top-0 left-24 text-[8px] text-red-500 font-bold">X</div>
+                        
+                        {/* Y Axis (Green) - Points "Away" from user in default CSS 3D, we use -Y as "Towards" */}
+                        <div className="absolute top-0 left-0 h-0.5 bg-green-500 w-24 origin-left" style={{ transform: 'rotateZ(90deg)' }}></div>
+                        <div className="absolute top-24 left-0 text-[8px] text-green-500 font-bold">Y</div>
+                        
+                        {/* Z Axis (Blue) - Vertical Up */}
+                        <div className="absolute top-0 left-0 h-0.5 bg-blue-500 w-24 origin-left" style={{ transform: 'rotateY(-90deg)' }}></div>
+                        <div className="absolute -top-24 left-0 text-[8px] text-blue-500 font-bold" style={{ transform: 'rotateX(-90deg)' }}>Z</div>
+                    </div>
+
+                    {/* --- GROUND GRID --- */}
+                    <div className="absolute -top-[200px] -left-[200px] w-[400px] h-[400px] border border-slate-300/30 opacity-30" 
+                         style={{ 
+                             backgroundImage: 'linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px)', 
+                             backgroundSize: '40px 40px',
+                             transform: 'translateZ(-20px)' // Slightly below origin
+                         }} 
+                    />
+
+                    {/* ================= KINEMATIC CHAIN START ================= */}
+
+                    {/* 1. YAW GROUP (Base Rotation around Z) */}
+                    <div className="w-0 h-0 relative transition-transform duration-300 ease-out" 
+                         style={{ transformStyle: 'preserve-3d', transform: `rotateZ(${yaw}deg)` }}>
+                        
+                        {/* Base Visual (The Cylinder on the right in your diagram) */}
+                        <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-slate-700 shadow-xl border-4 border-slate-600" 
+                             style={{ transform: 'translateZ(0px)' }}>
+                             <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" /> {/* Pivot Point */}
+                             </div>
+                        </div>
+
+                        {/* 2. THE ARM (Extending along +Y axis, which is "down" on screen in 2D, but we rotate it to face viewer) */}
+                        {/* Per your request: "Arm pointing out of screen towards us". In CSS 3D with rotateX(60), +Y points "down/towards". */}
+                        
+                        <div className="absolute top-0 left-[-10px] w-[20px] h-[180px] origin-top"
+                             style={{ 
+                                 transformStyle: 'preserve-3d',
+                                 transform: 'translateZ(20px)' // Lifted off the ground
+                             }}>
+                            
+                            {/* Aluminum Profile Visual */}
+                            <div className="w-full h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-300 border border-slate-400 shadow-lg relative">
+                                <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-slate-400/30"></div>
+                                <div className="absolute top-10 left-0 w-full h-[2px] bg-black/10"></div>
+                                <div className="absolute top-20 left-0 w-full h-[2px] bg-black/10"></div>
+                                <div className="absolute bottom-4 left-0 w-full text-[6px] text-slate-500 text-center -rotate-90 font-mono">ARM-2040</div>
+                            </div>
+                            
+                            {/* 3. LIFT & ROLL GROUP (Attached to end of arm) */}
+                            <div className="absolute bottom-0 left-1/2 w-0 h-0" style={{ transformStyle: 'preserve-3d' }}>
+                                
+                                {/* Fixed Housing for Lift (The vertical box at end of arm) */}
+                                <div className="absolute -left-[15px] -top-[10px] w-[30px] h-[30px] bg-slate-800 rounded-sm border border-slate-600"
+                                     style={{ transform: 'translateZ(10px)' }}> {/* Sits on top of arm end */}
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-slate-500 rounded-full"></div>
+                                </div>
+
+                                {/* 4. LIFT PISTON (Moves along Z axis) */}
+                                <div className="absolute w-0 h-0 transition-transform duration-300 ease-linear"
+                                     style={{ 
+                                         transformStyle: 'preserve-3d',
+                                         transform: `translateZ(${heightOffset}px)` // Moves Down (Negative Z)
+                                     }}>
+                                    
+                                    {/* The Piston Rod */}
+                                    <div className="absolute -left-[4px] -top-[10px] w-[8px] h-[40px] bg-slate-300 border border-slate-400 origin-top"
+                                         style={{ transform: 'rotateX(-90deg)' }}> {/* Pointing Down */}
+                                    </div>
+
+                                    {/* 5. ROLL GROUP (Attached to bottom of lift) */}
+                                    {/* User definition: Roll rotates around Vertical Axis (Z) */}
+                                    <div className="absolute w-0 h-0"
+                                         style={{ 
+                                             transformStyle: 'preserve-3d',
+                                             transform: `translateZ(-50px) rotateZ(${roll}deg)` // Positioned at bottom of piston
+                                         }}>
+
+                                        {/* Roll Motor/Housing (The "T" shape connection) */}
+                                        <div className="absolute -left-[12px] -top-[12px] w-[24px] h-[24px] bg-slate-700 rounded-md border border-slate-500 shadow-md">
+                                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-[12px] h-[4px] bg-slate-600"></div> {/* Connection to piston */}
+                                        </div>
+
+                                        {/* 6. ROLLER BRACKET & ROLLER */}
+                                        {/* Initial State: Roller perpendicular to Arm. Arm is Y, so Roller is X. */}
+                                        
+                                        {/* The Bracket (U-Shape) */}
+                                        <div className="absolute -left-[60px] -top-[2px] w-[120px] h-[4px] bg-slate-400" style={{ transform: 'translateZ(-10px)' }}>
+                                            {/* Side Arms of Bracket */}
+                                            <div className="absolute left-0 top-0 w-[4px] h-[20px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
+                                            <div className="absolute right-0 top-0 w-[4px] h-[20px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
+                                        </div>
+
+                                        {/* THE ROLLER (Cylinder) */}
+                                        <div className="absolute -left-[55px] -top-[8px] w-[110px] h-[16px] rounded-full"
+                                             style={{ 
+                                                 transform: 'translateZ(-25px)', // Below bracket
+                                                 background: `
+                                                    repeating-linear-gradient(
+                                                        90deg,
+                                                        #e2e8f0,
+                                                        #e2e8f0 2px,
+                                                        #cbd5e1 4px,
+                                                        #e2e8f0 6px
+                                                    )
+                                                 `, // Fuzzy texture simulation
+                                                 boxShadow: 'inset 0 0 10px rgba(0,0,0,0.2)'
+                                             }}>
+                                             {/* Roller End Caps */}
+                                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-600 rounded-l-full"></div>
+                                             <div className="absolute right-0 top-0 bottom-0 w-1 bg-slate-600 rounded-r-full"></div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Readout Overlay */}
+            <div className="absolute bottom-2 right-3 text-right bg-white/80 backdrop-blur-sm p-2 rounded-lg border border-white shadow-sm">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-end gap-2 text-xs font-mono text-slate-600">
+                        <span className="font-bold text-orange-500">YAW (Z)</span>
+                        <span className="bg-slate-100 px-1.5 rounded w-10 text-center border border-slate-200">{yaw}°</span>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 text-xs font-mono text-slate-600">
+                        <span className="font-bold text-sci-purple">LIFT (Z)</span>
+                        <span className="bg-slate-100 px-1.5 rounded w-10 text-center border border-slate-200">{height}</span>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 text-xs font-mono text-slate-600">
+                        <span className="font-bold text-sci-blue">ROLL (Z)</span>
+                        <span className="bg-slate-100 px-1.5 rounded w-10 text-center border border-slate-200">{roll}°</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const ManualAuto: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'MANUAL' | 'SEMI'>('MANUAL');
@@ -248,7 +428,6 @@ const ManualAuto: React.FC = () => {
 
       {activeTab === 'MANUAL' ? (
         <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 pb-20 px-1">
-            {/* ... Existing Manual Mode Components ... */}
             
             {/* 1. Device Enable Card */}
             <div className="glass-panel lg:col-span-12 rounded-3xl p-6">
@@ -459,6 +638,11 @@ const ManualAuto: React.FC = () => {
                     <div className="p-1.5 bg-purple-100 text-sci-purple rounded-lg"><GitCommit size={18} /></div>
                     机械臂运动学
                 </h3>
+
+                {/* VISUALIZER INSERTED HERE */}
+                <div className="mb-6">
+                    <RobotArmViz yaw={armYaw} roll={armRoll} height={armHeight} enabled={armEnabled} />
+                </div>
                 
                 <div className="space-y-6">
                     <div className="space-y-3">
