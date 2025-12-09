@@ -16,9 +16,9 @@ const ManualAuto: React.FC = () => {
   const [pumpFluid, setPumpFluid] = useState(0);
 
   // Chassis Control States
-  const [chassisSpeedSetting, setChassisSpeedSetting] = useState(500); // mm/s visual representation
+  const [chassisSpeedSetting, setChassisSpeedSetting] = useState(500); 
   const [joystickData, setJoystickData] = useState({ x: 0, y: 0 });
-  const [zRotation, setZRotation] = useState(0); // -1 to 1
+  const [zRotation, setZRotation] = useState(0);
 
   // Arm Control States
   const [armYaw, setArmYaw] = useState(0);
@@ -29,7 +29,6 @@ const ManualAuto: React.FC = () => {
   const handleTabChange = async (tab: 'MANUAL' | 'SEMI') => {
     setActiveTab(tab);
     try {
-        // 1: Manual, 2: Semi-Auto
         await ros2Connection.sendMachineModeRequest(tab === 'MANUAL' ? 1 : 2);
     } catch (e) {
         console.error("Failed to switch mode", e);
@@ -73,8 +72,6 @@ const ManualAuto: React.FC = () => {
     if (type === 'speed') setPumpSpeed(val);
     else setPumpFluid(val);
     
-    // Debounce or immediate send? For responsiveness, sending immediately but relying on the backend to handle rate is okay, 
-    // or we can use the interval loop. Here we send on change for simplicity.
     ros2Connection.publishPumpControl({
         pump_switch: pumpOn ? 1 : 0,
         pump_speed: type === 'speed' ? val : pumpSpeed,
@@ -117,37 +114,13 @@ const ManualAuto: React.FC = () => {
     if (!chassisEnabled) return;
 
     const interval = setInterval(() => {
-        // If joystick is active or rotation is active
         if (joystickData.x !== 0 || joystickData.y !== 0 || zRotation !== 0) {
-            // Mapping:
-            // Joystick Y (up is -1 in HTML, usually we want +1 for forward). 
-            // So x_speed (forward) = -joystick.y * scale
-            // Joystick X (right is +1). y_speed (left/right) -> usually Left is +Y in ROS ENU.
-            // So y_speed (left) = -joystick.x * scale
-            
-            // Speed scale: converting abstract 0-1 to m/s. Let's assume max speed setting (500) = 0.5 m/s? 
-            // Or just treat speedSetting as a raw multiplier. 
-            // User provided x_speed as float64 m/s. 
-            // Let's assume speedSetting 500 = 0.5m/s.
             const scale = chassisSpeedSetting / 1000.0; 
-
             const x_speed = -joystickData.y * scale;
             const y_speed = -joystickData.x * scale;
-            const z_speed = zRotation * 30; // 30 deg/s max rotation
+            const z_speed = zRotation * 30; 
 
-            ros2Connection.publishChassisControl({
-                x_speed,
-                y_speed,
-                z_speed
-            });
-        } else {
-             // Send stop packet occasionally? Or rely on release?
-             // Usually good to send 0s once when stopping, Joystick component calls onStop which sets x/y to 0.
-             // We can detect if we just stopped. 
-             // For simplicity, we just won't spam 0s if nothing is moving, 
-             // BUT we need to send 0s at least once when releasing. 
-             // The state updates to 0,0, so this loop will catch the 0,0 state at least once if we don't return early.
-             // However, to avoid spamming 0s forever, we can track 'isMoving'.
+            ros2Connection.publishChassisControl({ x_speed, y_speed, z_speed });
         }
     }, 100);
 
@@ -164,119 +137,126 @@ const ManualAuto: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      {/* Top Tabs */}
-      <div className="flex space-x-1 bg-gray-900/50 p-1 rounded-xl w-fit mx-auto border border-gray-700 backdrop-blur-md sticky top-0 z-20">
+      {/* Top Tabs - Floating Island Style */}
+      <div className="flex space-x-1 bg-white/70 p-1.5 rounded-2xl w-fit mx-auto border border-white shadow-lg backdrop-blur-md sticky top-0 z-20">
         <button
           onClick={() => handleTabChange('MANUAL')}
-          className={`px-8 py-2 rounded-lg font-mono text-sm font-bold transition-all duration-300 ${
+          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
             activeTab === 'MANUAL' 
-              ? 'bg-neon-blue text-black shadow-[0_0_15px_rgba(0,243,255,0.4)]' 
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-gradient-to-r from-sci-blue to-blue-500 text-white shadow-md' 
+              : 'text-slate-500 hover:text-sci-blue hover:bg-white/50'
           }`}
         >
-          MANUAL MODE
+          MANUAL
         </button>
         <button
           onClick={() => handleTabChange('SEMI')}
-          className={`px-8 py-2 rounded-lg font-mono text-sm font-bold transition-all duration-300 ${
+          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
             activeTab === 'SEMI' 
-              ? 'bg-neon-purple text-white shadow-[0_0_15px_rgba(188,19,254,0.4)]' 
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-gradient-to-r from-sci-purple to-purple-500 text-white shadow-md' 
+              : 'text-slate-500 hover:text-sci-purple hover:bg-white/50'
           }`}
         >
-          SEMI-AUTO MODE
+          SEMI-AUTO
         </button>
       </div>
 
       {activeTab === 'MANUAL' ? (
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 pb-20">
+        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 pb-20 px-1">
             
             {/* 1. Device Enable Card */}
-            <div className="lg:col-span-12 bg-gray-900/40 border border-gray-800 rounded-2xl p-6 backdrop-blur-sm">
-                <h3 className="text-neon-blue font-mono font-bold flex items-center gap-2 mb-4">
-                    <Power size={20} /> DEVICE ENABLE
+            <div className="glass-panel lg:col-span-12 rounded-3xl p-6">
+                <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-4">
+                    <div className="p-1.5 bg-blue-100 text-sci-blue rounded-lg"><Power size={18} /></div>
+                    DEVICE ENABLE
                 </h3>
                 <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    <div className="flex items-center justify-between bg-black/40 p-4 rounded-xl flex-1 border border-gray-800">
-                        <span className="text-gray-300 font-mono">CHASSIS MOTOR</span>
+                    <div className="flex items-center justify-between bg-white p-4 rounded-2xl flex-1 border border-slate-100 shadow-sm">
+                        <span className="text-slate-600 font-medium">CHASSIS MOTOR</span>
                         <button 
                             onClick={toggleChassis}
-                            className={`px-6 py-2 rounded-lg font-bold font-mono transition-all ${
-                                chassisEnabled ? 'bg-green-500 text-black shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-gray-800 text-gray-500'
+                            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${
+                                chassisEnabled 
+                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                             }`}
                         >
-                            {chassisEnabled ? 'ENABLED' : 'DISABLED'}
+                            {chassisEnabled ? 'ONLINE' : 'OFFLINE'}
                         </button>
                     </div>
-                    <div className="flex items-center justify-between bg-black/40 p-4 rounded-xl flex-1 border border-gray-800">
-                        <span className="text-gray-300 font-mono">ROBOT ARM</span>
+                    <div className="flex items-center justify-between bg-white p-4 rounded-2xl flex-1 border border-slate-100 shadow-sm">
+                        <span className="text-slate-600 font-medium">ROBOT ARM</span>
                         <button 
                              onClick={toggleArm}
-                             className={`px-6 py-2 rounded-lg font-bold font-mono transition-all ${
-                                 armEnabled ? 'bg-green-500 text-black shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-gray-800 text-gray-500'
+                             className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${
+                                 armEnabled 
+                                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                                 : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                              }`}
                         >
-                            {armEnabled ? 'ENABLED' : 'DISABLED'}
+                            {armEnabled ? 'ONLINE' : 'OFFLINE'}
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* 2. Pump Control */}
-            <div className="lg:col-span-4 bg-gray-900/40 border border-gray-800 rounded-2xl p-6 backdrop-blur-sm">
-                <h3 className="text-neon-blue font-mono font-bold flex items-center gap-2 mb-4">
-                    <Droplets size={20} /> PUMP CONTROL
+            <div className="glass-panel lg:col-span-4 rounded-3xl p-6">
+                <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-4">
+                    <div className="p-1.5 bg-cyan-100 text-sci-cyan rounded-lg"><Droplets size={18} /></div>
+                    PUMP CONTROL
                 </h3>
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">PUMP STATUS</span>
+                <div className="space-y-8">
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                        <span className="text-sm text-slate-500 font-medium ml-2">MASTER SWITCH</span>
                         <button 
                              onClick={togglePump}
-                             className={`w-12 h-6 rounded-full transition-colors relative ${pumpOn ? 'bg-neon-blue' : 'bg-gray-700'}`}
+                             className={`w-14 h-8 rounded-full transition-all relative shadow-inner ${pumpOn ? 'bg-sci-cyan' : 'bg-slate-200'}`}
                         >
-                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${pumpOn ? 'left-7' : 'left-1'}`} />
+                            <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-all ${pumpOn ? 'left-7' : 'left-1'}`} />
                         </button>
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-mono text-gray-400">
-                            <span>SPEED (ml/s)</span>
-                            <span className="text-neon-blue">{pumpSpeed}</span>
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-xs font-bold text-slate-400">
+                            <span>SPEED</span>
+                            <span className="text-sci-cyan bg-cyan-50 px-2 py-0.5 rounded">{pumpSpeed} ml/s</span>
                         </div>
                         <input 
                             type="range" min="0" max="200" value={pumpSpeed}
                             onChange={(e) => handlePumpSliderChange('speed', parseInt(e.target.value))}
-                            className="w-full accent-neon-blue h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full accent-sci-cyan h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
 
-                    <div className="space-y-2">
-                         <div className="flex justify-between text-xs font-mono text-gray-400">
-                            <span>FLUID (ml)</span>
-                            <span className="text-neon-blue">{pumpFluid}</span>
+                    <div className="space-y-3">
+                         <div className="flex justify-between text-xs font-bold text-slate-400">
+                            <span>VOLUME</span>
+                            <span className="text-sci-cyan bg-cyan-50 px-2 py-0.5 rounded">{pumpFluid} ml</span>
                         </div>
                         <input 
                             type="range" min="0" max="12" value={pumpFluid}
                             onChange={(e) => handlePumpSliderChange('fluid', parseInt(e.target.value))}
-                            className="w-full accent-neon-blue h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full accent-sci-cyan h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
                 </div>
             </div>
 
             {/* 3. Chassis Control */}
-            <div className={`lg:col-span-4 bg-gray-900/40 border border-gray-800 rounded-2xl p-6 backdrop-blur-sm flex flex-col items-center ${!chassisEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                 <h3 className="text-neon-blue font-mono font-bold flex items-center gap-2 mb-4 w-full">
-                    <Move size={20} /> CHASSIS DRIVE
+            <div className={`glass-panel lg:col-span-4 rounded-3xl p-6 flex flex-col items-center transition-opacity duration-300 ${!chassisEnabled ? 'opacity-60 pointer-events-none grayscale' : ''}`}>
+                 <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-6 w-full">
+                    <div className="p-1.5 bg-blue-100 text-sci-blue rounded-lg"><Move size={18} /></div>
+                    CHASSIS DRIVE
                 </h3>
                 
-                <div className="flex items-end gap-6 mb-6">
+                <div className="flex items-end gap-6 mb-8">
                     <Joystick onMove={(x, y) => setJoystickData({x, y})} onStop={() => setJoystickData({x:0, y:0})} />
                     
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
                         <button 
-                            className={`p-4 rounded-xl border border-gray-700 bg-black/40 active:bg-neon-blue active:text-black transition-colors ${zRotation < 0 ? 'bg-neon-blue text-black' : 'text-gray-300'}`}
-                            onMouseDown={() => setZRotation(1)} // Left turn usually positive Z? ROS convention varies. Let's assume CCW is positive
+                            className={`p-4 rounded-2xl border transition-all shadow-sm ${zRotation > 0 ? 'bg-sci-blue text-white border-transparent shadow-blue-500/30' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
+                            onMouseDown={() => setZRotation(1)}
                             onMouseUp={() => setZRotation(0)}
                             onTouchStart={() => setZRotation(1)}
                             onTouchEnd={() => setZRotation(0)}
@@ -284,7 +264,7 @@ const ManualAuto: React.FC = () => {
                             <RotateCcw size={24} />
                         </button>
                         <button 
-                            className={`p-4 rounded-xl border border-gray-700 bg-black/40 active:bg-neon-blue active:text-black transition-colors ${zRotation > 0 ? 'bg-neon-blue text-black' : 'text-gray-300'}`}
+                            className={`p-4 rounded-2xl border transition-all shadow-sm ${zRotation < 0 ? 'bg-sci-blue text-white border-transparent shadow-blue-500/30' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
                             onMouseDown={() => setZRotation(-1)}
                             onMouseUp={() => setZRotation(0)}
                             onTouchStart={() => setZRotation(-1)}
@@ -295,70 +275,71 @@ const ManualAuto: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="w-full bg-black/20 p-3 rounded-xl border border-gray-800">
-                    <div className="flex justify-between text-xs font-mono mb-2">
-                        <span className="text-gray-400">MAX SPEED LIMIT</span>
-                        <span className="text-neon-blue">{chassisSpeedSetting} mm/s</span>
+                <div className="w-full bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="flex justify-between text-xs font-bold mb-3">
+                        <span className="text-slate-400">SPEED LIMIT</span>
+                        <span className="text-sci-blue">{chassisSpeedSetting} mm/s</span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setChassisSpeedSetting(Math.max(0, chassisSpeedSetting - 50))} className="text-gray-500 hover:text-white">-</button>
+                        <button onClick={() => setChassisSpeedSetting(Math.max(0, chassisSpeedSetting - 50))} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">-</button>
                         <input 
                             type="range" min="0" max="1000" step="50"
                             value={chassisSpeedSetting}
                             onChange={(e) => setChassisSpeedSetting(parseInt(e.target.value))}
-                            className="flex-1 accent-neon-blue h-1 bg-gray-700 rounded-lg appearance-none"
+                            className="flex-1 accent-sci-blue h-2 bg-slate-200 rounded-lg appearance-none"
                         />
-                        <button onClick={() => setChassisSpeedSetting(Math.min(1000, chassisSpeedSetting + 50))} className="text-gray-500 hover:text-white">+</button>
+                        <button onClick={() => setChassisSpeedSetting(Math.min(1000, chassisSpeedSetting + 50))} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">+</button>
                     </div>
                 </div>
             </div>
 
             {/* 4. Arm Control */}
-            <div className={`lg:col-span-4 bg-gray-900/40 border border-gray-800 rounded-2xl p-6 backdrop-blur-sm ${!armEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                 <h3 className="text-neon-blue font-mono font-bold flex items-center gap-2 mb-4">
-                    <GitCommit size={20} /> ARM KINEMATICS
+            <div className={`glass-panel lg:col-span-4 rounded-3xl p-6 transition-opacity duration-300 ${!armEnabled ? 'opacity-60 pointer-events-none grayscale' : ''}`}>
+                 <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-4">
+                    <div className="p-1.5 bg-purple-100 text-sci-purple rounded-lg"><GitCommit size={18} /></div>
+                    ARM KINEMATICS
                 </h3>
                 
                 <div className="space-y-6">
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-mono text-gray-400">
-                            <span>YAW (-90° to 90°)</span>
-                            <span className="text-neon-purple">{armYaw}°</span>
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-xs font-bold text-slate-400">
+                            <span>YAW</span>
+                            <span className="text-sci-purple bg-purple-50 px-2 py-0.5 rounded">{armYaw}°</span>
                         </div>
                         <input 
                             type="range" min="-90" max="90" value={armYaw}
                             onChange={(e) => handleArmChange('yaw', parseInt(e.target.value))}
-                            className="w-full accent-neon-purple h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full accent-sci-purple h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-mono text-gray-400">
-                            <span>ROLL (-180° to 180°)</span>
-                            <span className="text-neon-purple">{armRoll}°</span>
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-xs font-bold text-slate-400">
+                            <span>ROLL</span>
+                            <span className="text-sci-purple bg-purple-50 px-2 py-0.5 rounded">{armRoll}°</span>
                         </div>
                         <input 
                             type="range" min="-180" max="180" value={armRoll}
                             onChange={(e) => handleArmChange('roll', parseInt(e.target.value))}
-                            className="w-full accent-neon-purple h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full accent-sci-purple h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-mono text-gray-400">
-                            <span>HEIGHT (0-8 cm)</span>
-                            <span className="text-neon-purple">{armHeight} cm</span>
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-xs font-bold text-slate-400">
+                            <span>HEIGHT</span>
+                            <span className="text-sci-purple bg-purple-50 px-2 py-0.5 rounded">{armHeight} cm</span>
                         </div>
                         <input 
                             type="range" min="0" max="8" value={armHeight}
                             onChange={(e) => handleArmChange('height', parseInt(e.target.value))}
-                            className="w-full accent-neon-purple h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full accent-sci-purple h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
 
                     <button 
                         onClick={resetArm}
-                        className="w-full py-3 mt-2 border border-neon-purple/50 text-neon-purple rounded-xl hover:bg-neon-purple hover:text-white transition-all font-mono font-bold text-sm"
+                        className="w-full py-3 mt-4 bg-white border border-purple-200 text-sci-purple rounded-xl hover:bg-purple-50 transition-all font-bold text-sm shadow-sm"
                     >
                         RESET POSITION
                     </button>
@@ -368,12 +349,16 @@ const ManualAuto: React.FC = () => {
         </div>
       ) : (
         /* SEMI AUTO Placeholder */
-        <div className="flex-1 flex flex-col items-center justify-center text-gray-500 space-y-4">
-            <Activity size={48} className="animate-pulse-fast text-neon-purple" />
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 space-y-6">
+            <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-xl">
+                 <Activity size={48} className="animate-pulse text-sci-purple" />
+            </div>
             <div className="text-center font-mono">
-                <h3 className="text-xl text-white mb-2">SEMI-AUTO MODE ACTIVE</h3>
+                <h3 className="text-xl font-bold text-slate-700 mb-2">SEMI-AUTO ACTIVE</h3>
                 <p>Waiting for parameter configuration...</p>
-                <p className="text-xs mt-4 opacity-50">(Interface construction pending)</p>
+                <div className="mt-6 px-4 py-2 bg-white rounded-full border border-slate-200 text-xs inline-block">
+                    CONSTRUCTION PENDING
+                </div>
             </div>
         </div>
       )}

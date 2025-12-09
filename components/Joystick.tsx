@@ -74,24 +74,24 @@ const Joystick: React.FC<JoystickProps> = ({ onMove, onStop }) => {
   return (
     <div
       ref={containerRef}
-      className={`relative w-48 h-48 rounded-full border-2 ${active ? 'border-neon-blue shadow-[0_0_20px_rgba(0,243,255,0.5)]' : 'border-gray-700'} bg-black/40 backdrop-blur-md flex items-center justify-center transition-all duration-200 select-none touch-none`}
+      className={`relative w-48 h-48 rounded-full border ${active ? 'border-sci-blue shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'border-slate-200'} bg-white/50 backdrop-blur-md flex items-center justify-center transition-all duration-200 select-none touch-none shadow-inner`}
       onMouseDown={handleStart}
       onTouchStart={handleStart}
     >
-        {/* Decorative Grid */}
-        <div className="absolute inset-0 rounded-full border border-white/5" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px) 0 0/10px 10px' }}></div>
+        {/* Decorative Grid - Light */}
+        <div className="absolute inset-0 rounded-full opacity-30" style={{ background: 'radial-gradient(circle, #94a3b8 1px, transparent 1px) 0 0/12px 12px' }}></div>
+        <div className="absolute inset-4 rounded-full border border-slate-200/50"></div>
 
       {/* Stick */}
       <div
-        className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-black border border-neon-blue shadow-lg z-10"
+        className="w-16 h-16 rounded-full bg-gradient-to-br from-white to-slate-100 border border-slate-200 shadow-[0_4px_10px_rgba(0,0,0,0.1)] z-10 flex items-center justify-center"
         style={{
           transform: `translate(${position.x}px, ${position.y}px)`,
-          transition: active ? 'none' : 'transform 0.2s ease-out',
-          boxShadow: active ? '0 0 15px rgba(0, 243, 255, 0.8)' : 'none'
+          transition: active ? 'none' : 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy return
         }}
       >
-        <div className="w-full h-full flex items-center justify-center">
-            <div className={`w-2 h-2 rounded-full ${active ? 'bg-neon-blue' : 'bg-gray-500'}`}></div>
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-300 ${active ? 'bg-gradient-to-br from-sci-blue to-sci-cyan' : 'bg-slate-200'}`}>
+             <div className="w-4 h-4 rounded-full bg-white/80 shadow-sm" />
         </div>
       </div>
     </div>

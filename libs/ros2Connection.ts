@@ -1,4 +1,5 @@
-import ROSLIB from 'roslib';
+// Access global ROSLIB injected via script tag in index.html
+const ROSLIB = (window as any).ROSLIB;
 
 export interface ConnectionEstablishRequest {
   establish: number; // 0: 关机, 1: 开机
@@ -68,13 +69,24 @@ export interface MachineModeResponse {
 }
 
 export class ROS2Connection {
-  private ros: ROSLIB.Ros | null = null;
-  private pumpTopic: ROSLIB.Topic | null = null;
-  private chassisTopic: ROSLIB.Topic | null = null;
-  private armTopic: ROSLIB.Topic | null = null;
+  // Use 'any' for ROSLIB types since we are using the global object
+  private ros: any | null = null;
+  private pumpTopic: any | null = null;
+  private chassisTopic: any | null = null;
+  private armTopic: any | null = null;
   private pumpTopicReady = false; 
   private chassisTopicReady = false; 
   private armTopicReady = false; 
+  
+  // Mock Mode Flag
+  private mockMode = false;
+
+  setMockMode(enable: boolean) {
+    this.mockMode = enable;
+    if (enable) {
+        console.log('[SYSTEM] 虚拟仿真链路已激活 (Mock Mode Activated)');
+    }
+  }
 
   private resetTopicStates() {
     this.pumpTopicReady = false;
@@ -139,8 +151,9 @@ export class ROS2Connection {
       
       const timeout = setTimeout(() => {
         if (this.ros) this.ros.close();
-        reject(new Error('连接超时：请检查服务器、IP/端口和网络'));
-      }, 10000);
+        // Instead of rejecting, we can allow the UI to handle the fallback
+        reject(new Error('连接超时'));
+      }, 2000); // Short timeout for faster fallback
 
       this.ros = new ROSLIB.Ros({ url });
 
@@ -152,9 +165,8 @@ export class ROS2Connection {
       });
 
       this.ros.on('error', (error: any) => {
-        clearTimeout(timeout);
+        // Keep error handler but let timeout handle the rejection for UX consistency
         console.error('✗ ROS2 连接错误:', error);
-        reject(new Error('连接失败：请检查 rosbridge 状态和网络'));
       });
 
       this.ros.on('close', () => {
@@ -168,35 +180,23 @@ export class ROS2Connection {
       this.ros.close();
       this.ros = null;
 	}
-	if (this.pumpTopic) {
-	  this.pumpTopic.unadvertise(); 
-	  this.pumpTopic = null;
-	}
-	if (this.chassisTopic) {
-	  this.chassisTopic.unadvertise();
-	  this.chassisTopic = null;
-	}
-	if (this.armTopic) {
-	  this.armTopic.unadvertise();
-	  this.armTopic = null;
-	}
-	
-	this.pumpTopicReady = false;
-	this.chassisTopicReady = false;
-	this.armTopicReady = false;
-	
-	console.log('已断开连接，话题已清理');
+	// Clean up topics
+	this.resetTopicStates();
+	console.log('已断开连接');
   }
 
   isConnected(): boolean {
-    return this.ros !== null && this.ros.isConnected;
+    return (this.ros !== null && this.ros.isConnected) || this.mockMode;
   }
 
-  // Modified to return Promise for UI feedback
+  // --- Mockable Service Calls ---
+
   sendConnectionEstablishRequest(establish: number): Promise<number> {
-    if (!this.ros) {
-      return Promise.reject(new Error('未连接到 ROS2，无法发送请求'));
+    if (this.mockMode) {
+        console.log(`[MOCK] 发送开机请求: ${establish}`);
+        return Promise.resolve(1);
     }
+    if (!this.ros) return Promise.reject(new Error('未连接到 ROS2'));
 
     const service = new ROSLIB.Service({
       ros: this.ros,
@@ -207,22 +207,18 @@ export class ROS2Connection {
     return new Promise((resolve, reject) => {
         const request = new ROSLIB.ServiceRequest({ establish });
         service.callService(request, 
-          (result: ConnectionEstablishResponse) => {
-            console.log('连接建立响应:', result.establish_ack)
-            resolve(result.establish_ack);
-          },
-          (error) => {
-            console.error('连接建立请求失败:', error);
-            reject(error);
-          }
+          (result: ConnectionEstablishResponse) => resolve(result.establish_ack),
+          (error: any) => reject(error)
         );
     });
   }
 
   sendChassisEnableRequest(motor_cmd: number): Promise<number> {
-    if (!this.ros) {
-      return Promise.reject(new Error('未连接ROS2'));
+    if (this.mockMode) {
+        console.log(`[MOCK] 底盘使能切换: ${motor_cmd}`);
+        return Promise.resolve(motor_cmd === 2 ? 0 : 1); // Return success
     }
+    if (!this.ros) return Promise.reject(new Error('未连接ROS2'));
 
     const service = new ROSLIB.Service({
       ros: this.ros,
@@ -233,22 +229,18 @@ export class ROS2Connection {
     return new Promise((resolve, reject) => {
         const request = new ROSLIB.ServiceRequest({ motor_cmd });
         service.callService(request,
-          (result: ChassisEnableResponse) => {
-            console.log('底盘使能响应:', result.motor_ack);
-            resolve(result.motor_ack);
-          },
-          (error) => {
-            console.error('底盘使能请求失败:', error);
-            reject(error);
-          }
+          (result: ChassisEnableResponse) => resolve(result.motor_ack),
+          (error: any) => reject(error)
         );
     });
   }
 
   sendArmEnableRequest(motor_cmd: number): Promise<number> {
-    if (!this.ros) {
-      return Promise.reject(new Error('未连接ROS2'));
+    if (this.mockMode) {
+        console.log(`[MOCK] 机械臂使能切换: ${motor_cmd}`);
+        return Promise.resolve(motor_cmd === 2 ? 0 : 1);
     }
+    if (!this.ros) return Promise.reject(new Error('未连接ROS2'));
 
     const service = new ROSLIB.Service({
       ros: this.ros,
@@ -259,37 +251,34 @@ export class ROS2Connection {
     return new Promise((resolve, reject) => {
         const request = new ROSLIB.ServiceRequest({ motor_cmd });
         service.callService(request,
-          (result: ArmEnableResponse) => {
-            console.log('机械臂使能响应:', result.arm_ack);
-            resolve(result.arm_ack);
-          },
-          (error) => {
-            console.error('机械臂使能请求失败:', error);
-            reject(error);
-          }
+          (result: ArmEnableResponse) => resolve(result.arm_ack),
+          (error: any) => reject(error)
         );
     });
   }
 
   publishChassisControl(message: ChassisControlMessage) {
-    if (!this.ros || !this.ros.isConnected) {
-      // Quiet fail if disconnected to avoid spamming console during hot reload
-      return;
+    if (this.mockMode) {
+        // Only log periodically or it spams console
+        // console.log('[MOCK] 底盘控制:', message); 
+        return;
     }
+    if (!this.ros || !this.ros.isConnected) return;
   
     if (!this.chassisTopic || !this.chassisTopicReady) {
       this.initTopics(); 
-      if (!this.chassisTopic || !this.chassisTopicReady) {
-        return;
-      }
+      if (!this.chassisTopic || !this.chassisTopicReady) return;
     }
   
     const rosMessage = new ROSLIB.Message(message);
     this.chassisTopic.publish(rosMessage);
-    // console.log('底盘控制消息已发布:', message); // Commented out to reduce log spam
   }
   
   publishPumpControl(message: PumpMessage) {
+    if (this.mockMode) {
+        console.log('[MOCK] 泵控制:', message);
+        return;
+    }
     if (!this.ros || !this.ros.isConnected) return;
   
     if (!this.pumpTopic || !this.pumpTopicReady) {
@@ -299,10 +288,13 @@ export class ROS2Connection {
   
     const rosMessage = new ROSLIB.Message(message);
     this.pumpTopic.publish(rosMessage);
-    console.log('泵控制消息已发布:', message);
   }
   
   publishArmControl(message: ArmControlMessage) {
+    if (this.mockMode) {
+        console.log('[MOCK] 机械臂控制:', message);
+        return;
+    }
     if (!this.ros || !this.ros.isConnected) return;
   
     if (!this.armTopic || !this.armTopicReady) {
@@ -312,13 +304,14 @@ export class ROS2Connection {
   
     const rosMessage = new ROSLIB.Message(message);
     this.armTopic.publish(rosMessage);
-    console.log('机械臂控制消息已发布:', message);
   }
 
   sendSemiModeRequest(blade_roller: number, direction: number, width: number, length: number, thickness: number): Promise<number> {
-    if (!this.ros) {
-      return Promise.reject("Not Connected");
+    if (this.mockMode) {
+        console.log('[MOCK] 半自动参数下发', {blade_roller, direction, width, length, thickness});
+        return Promise.resolve(1);
     }
+    if (!this.ros) return Promise.reject("Not Connected");
 
     const service = new ROSLIB.Service({
       ros: this.ros,
@@ -327,27 +320,19 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new ROSLIB.ServiceRequest({
-        blade_roller,
-        direction,
-        width,
-        length,
-        thickness
-        });
+        const request = new ROSLIB.ServiceRequest({ blade_roller, direction, width, length, thickness });
         service.callService(request,
-        (result: SemiModeResponse) => {
-            console.log('半自动模式响应:', result.ack);
-            resolve(result.ack);
-        },
-        (error) => {
-            console.error('半自动模式请求失败:', error);
-            reject(error);
-        }
+        (result: SemiModeResponse) => resolve(result.ack),
+        (error: any) => reject(error)
         );
     });
   }
 
   sendStopRequest(stop_cmd: number): Promise<number> {
+    if (this.mockMode) {
+        console.log(`[MOCK] 停止指令: ${stop_cmd}`);
+        return Promise.resolve(1);
+    }
     if (!this.ros) return Promise.reject("Not Connected");
 
     const service = new ROSLIB.Service({
@@ -359,19 +344,17 @@ export class ROS2Connection {
     return new Promise((resolve, reject) => {
         const request = new ROSLIB.ServiceRequest({ stop_cmd });
         service.callService(request,
-        (result: StopResponse) => {
-            console.log('停止指令响应:', result.stop_ack);
-            resolve(result.stop_ack);
-        },
-        (error) => {
-            console.error('停止指令请求失败:', error);
-            reject(error);
-        }
+        (result: StopResponse) => resolve(result.stop_ack),
+        (error: any) => reject(error)
         );
     });
   }
 
   sendMachineModeRequest(mode_cmd: number): Promise<number> {
+    if (this.mockMode) {
+        console.log(`[MOCK] 模式切换: ${mode_cmd}`);
+        return Promise.resolve(1);
+    }
     if (!this.ros) return Promise.reject("Not Connected");
 
     const service = new ROSLIB.Service({
@@ -383,14 +366,8 @@ export class ROS2Connection {
     return new Promise((resolve, reject) => {
         const request = new ROSLIB.ServiceRequest({ mode_cmd });
         service.callService(request,
-        (result: MachineModeResponse) => {
-            console.log('机器模式响应:', result.mode_ack);
-            resolve(result.mode_ack);
-        },
-        (error) => {
-            console.error('机器模式请求失败:', error);
-            reject(error);
-        }
+        (result: MachineModeResponse) => resolve(result.mode_ack),
+        (error: any) => reject(error)
         );
     });
   }

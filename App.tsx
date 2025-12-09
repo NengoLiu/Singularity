@@ -4,7 +4,7 @@ import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
 import ManualAuto from './components/ManualAuto';
 import { AppScreen, DashboardView, RobotStatus } from './types';
-import { Menu, Battery, Wifi, Send, Settings, Terminal } from 'lucide-react';
+import { Menu, Battery, Wifi, Send, Settings, Terminal, ZapOff, Activity, Bot } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { ros2Connection } from './libs/ros2Connection';
 
@@ -13,12 +13,14 @@ const App: React.FC = () => {
   const [view, setView] = useState<DashboardView>(DashboardView.MANUAL_SEMI_AUTO);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [connectionUrl, setConnectionUrl] = useState<string>('');
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
 
-  const [robotStatus] = useState<RobotStatus>({
+  const [robotStatus, setRobotStatus] = useState<RobotStatus>({
     battery: 87,
     signalStrength: 92,
     temperature: 42,
-    isOnline: true
+    isOnline: false
   });
   
   // Chat State
@@ -32,27 +34,38 @@ const App: React.FC = () => {
       const wsUrl = `ws://${ip}`;
       console.log(`Initializing Neural Link Protocol to: ${wsUrl}`);
       
-      try {
-        await ros2Connection.connect(wsUrl);
-        // Send Establish Request (0: Off, 1: On)
-        await ros2Connection.sendConnectionEstablishRequest(1);
-        
-        setConnectionUrl(wsUrl);
-        setScreen(AppScreen.DASHBOARD);
-        setView(DashboardView.MANUAL_SEMI_AUTO);
-      } catch (error) {
-        alert(`Connection Failed: ${error}`);
-        // For development/demo purposes without a real robot, we might want to let them in anyway?
-        // Uncomment below to bypass:
-        // setConnectionUrl(wsUrl);
-        // setScreen(AppScreen.DASHBOARD);
-      }
+      setIsLoginLoading(true);
+
+      // Simulate network handshake delay for effect
+      setTimeout(async () => {
+          try {
+            await ros2Connection.connect(wsUrl);
+            await ros2Connection.sendConnectionEstablishRequest(1);
+            
+            setConnectionUrl(wsUrl);
+            setRobotStatus(prev => ({ ...prev, isOnline: true }));
+            setIsDemoMode(false);
+          } catch (error) {
+            console.warn("Connection failed, switching to VIRTUAL LINK (Mock Mode)", error);
+            ros2Connection.setMockMode(true);
+            setConnectionUrl(wsUrl); 
+            setRobotStatus(prev => ({ ...prev, isOnline: true, signalStrength: 100 })); 
+            setIsDemoMode(true);
+          } finally {
+            setIsLoginLoading(false);
+            setScreen(AppScreen.DASHBOARD);
+            setView(DashboardView.MANUAL_SEMI_AUTO);
+          }
+      }, 1500); 
   };
 
   const handleLogout = () => {
       ros2Connection.disconnect();
+      ros2Connection.setMockMode(false);
       setScreen(AppScreen.LOGIN);
       setConnectionUrl('');
+      setIsDemoMode(false);
+      setIsLoginLoading(false);
   };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -99,72 +112,78 @@ const App: React.FC = () => {
               return <ManualAuto />;
           case DashboardView.AI_CHAT:
               return (
-                <div className="h-full flex flex-col">
-                    <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
-                        {chatHistory.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded-lg text-sm ${msg.role === 'user' ? 'bg-neon-blue/20 border border-neon-blue/50 text-white' : 'bg-gray-800 border border-gray-700 text-gray-300'}`}>
-                                    {msg.text}
+                <div className="h-full flex flex-col max-w-4xl mx-auto w-full pb-4">
+                     <div className="bg-white/60 backdrop-blur-md rounded-3xl p-6 border border-white shadow-lg flex-1 flex flex-col overflow-hidden">
+                        <div className="flex-1 overflow-y-auto mb-4 space-y-6 pr-2">
+                            {chatHistory.map((msg, idx) => (
+                                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`flex items-start max-w-[80%] gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${msg.role === 'user' ? 'bg-slate-200' : 'bg-gradient-to-br from-sci-blue to-sci-purple text-white'}`}>
+                                            {msg.role === 'user' ? 'U' : <Bot size={16} />}
+                                         </div>
+                                         <div className={`p-4 rounded-2xl text-sm shadow-sm ${msg.role === 'user' ? 'bg-white text-slate-700 border border-slate-100 rounded-tr-none' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'}`}>
+                                            {msg.text}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                    <form onSubmit={handleChatSubmit} className="relative">
-                        <input
-                            type="text"
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            placeholder="Command Singularity..."
-                            className="w-full bg-gray-900 border border-gray-700 rounded-full py-3 pl-4 pr-12 focus:outline-none focus:border-neon-blue font-mono text-sm"
-                        />
-                        <button type="submit" disabled={isChatLoading} className="absolute right-2 top-2 p-1.5 bg-neon-blue rounded-full text-black">
-                            <Send size={16} />
-                        </button>
-                    </form>
+                            ))}
+                        </div>
+                        <form onSubmit={handleChatSubmit} className="relative">
+                            <input
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="Command Singularity..."
+                                className="w-full bg-slate-50 border border-slate-200 rounded-full py-4 pl-6 pr-14 focus:outline-none focus:border-sci-blue focus:ring-2 focus:ring-blue-100 text-slate-700 shadow-inner"
+                            />
+                            <button type="submit" disabled={isChatLoading} className="absolute right-2 top-2 p-2 bg-gradient-to-r from-sci-blue to-sci-purple rounded-full text-white shadow-md hover:shadow-lg transition-all">
+                                <Send size={18} />
+                            </button>
+                        </form>
+                     </div>
                 </div>
               );
           default:
               return (
-                  <div className="h-full flex items-center justify-center text-gray-500 font-mono flex-col">
-                      <Terminal size={48} className="mb-4 text-neon-blue opacity-50" />
-                      <p>MODULE: {view}</p>
-                      <p className="text-xs mt-2 opacity-50">ACCESS RESTRICTED / UNDER CONSTRUCTION</p>
+                  <div className="h-full flex items-center justify-center text-slate-400 font-mono flex-col">
+                      <div className="w-32 h-32 rounded-full bg-white flex items-center justify-center shadow-lg mb-6">
+                        <Terminal size={48} className="text-sci-blue opacity-50" />
+                      </div>
+                      <p className="text-lg font-bold text-slate-600">MODULE: {view}</p>
+                      <p className="text-xs mt-2 bg-slate-200 px-3 py-1 rounded-full text-slate-500">ACCESS RESTRICTED</p>
                   </div>
               );
       }
   };
 
   return (
-    <div className="relative w-full h-screen text-white font-sans overflow-hidden">
+    <div className="relative w-full h-screen font-sans overflow-hidden text-slate-800">
       <Starfield />
 
       {screen === AppScreen.LOGIN ? (
-        <LoginScreen onLogin={handleLogin} />
+        <LoginScreen onLogin={handleLogin} isLoading={isLoginLoading} />
       ) : (
         <div className="flex flex-col h-full relative">
-            {/* Header */}
-            <header className="h-16 px-4 border-b border-gray-800 bg-black/40 backdrop-blur-md flex items-center justify-between z-30">
-                <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <Menu className="text-neon-blue" />
+            {/* Header - Glass Light */}
+            <header className="h-16 px-6 border-b border-white/40 bg-white/70 backdrop-blur-xl flex items-center justify-between z-30 shadow-sm">
+                <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                    <Menu className="text-sci-blue" />
                 </button>
                 
-                <div className="flex items-center space-x-4">
-                     <span className="font-mono text-xs text-neon-blue tracking-widest animate-pulse">
-                        {robotStatus.isOnline ? `LINK ESTABLISHED` : 'OFFLINE'}
+                <div className="flex items-center space-x-6">
+                     <span className={`font-mono text-xs font-bold tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full ${isDemoMode ? 'bg-orange-100 text-orange-500' : 'bg-blue-50 text-sci-blue'}`}>
+                        {isDemoMode ? <ZapOff size={14} /> : <Wifi size={14} />}
+                        {isDemoMode ? 'OFFLINE MODE' : `ONLINE: ${connectionUrl.split('://')[1]}`}
                     </span>
-                    <div className="flex items-center space-x-1 text-gray-300">
-                        <Battery size={16} className={robotStatus.battery < 20 ? 'text-red-500' : 'text-green-400'} />
-                        <span className="font-mono text-xs">{robotStatus.battery}%</span>
-                    </div>
-                     <div className="flex items-center space-x-1 text-gray-300">
-                        <Wifi size={16} className="text-neon-blue" />
-                        <span className="font-mono text-xs">{robotStatus.signalStrength}%</span>
+                    <div className="flex items-center space-x-2 text-slate-500">
+                        <Battery size={18} className={robotStatus.battery < 20 ? 'text-red-500' : 'text-emerald-500'} />
+                        <span className="font-mono text-sm font-bold">{robotStatus.battery}%</span>
                     </div>
                 </div>
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 relative overflow-hidden p-4">
+            <main className="flex-1 relative overflow-hidden p-4 md:p-6">
                 {renderDashboardContent()}
             </main>
 
