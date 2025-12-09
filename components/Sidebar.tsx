@@ -1,6 +1,15 @@
 import React from 'react';
 import { DashboardView } from '../types';
-import { Activity, Radio, Cpu, Settings, LogOut, ChevronLeft } from 'lucide-react';
+import { 
+  Shield, 
+  AlertTriangle, 
+  Map, 
+  Zap, 
+  HandMetal, 
+  Gamepad2, 
+  LogOut, 
+  ChevronLeft 
+} from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,10 +21,12 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentView, onChangeView, onLogout }) => {
   const menuItems = [
-    { id: DashboardView.CONTROL, label: 'MANUAL CONTROL', icon: Radio },
-    { id: DashboardView.TELEMETRY, label: 'TELEMETRY', icon: Activity },
-    { id: DashboardView.AI_CHAT, label: 'SINGULARITY AI', icon: Cpu },
-    { id: DashboardView.SETTINGS, label: 'SYSTEM CONFIG', icon: Settings },
+    { id: DashboardView.ADMIN, label: '管理员', icon: Shield },
+    { id: DashboardView.FAULT_MANAGEMENT, label: '故障管理', icon: AlertTriangle },
+    { id: DashboardView.PATH_PLANNING, label: '路径规划', icon: Map },
+    { id: DashboardView.FULL_AUTO, label: '全自动施工', icon: Zap },
+    { id: DashboardView.MANUAL_SEMI_AUTO, label: '手动/半自动施工', icon: HandMetal },
+    { id: DashboardView.REMOTE_INTERFACE, label: '遥控界面', icon: Gamepad2 },
   ];
 
   return (
@@ -63,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentView, onChang
             className="w-full flex items-center space-x-3 text-red-500 hover:text-red-400 transition-colors"
           >
             <LogOut size={20} />
-            <span className="font-mono text-sm">DISCONNECT</span>
+            <span className="font-mono text-sm">断开连接</span>
           </button>
         </div>
       </div>

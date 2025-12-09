@@ -4,10 +4,14 @@ export enum AppScreen {
 }
 
 export enum DashboardView {
-  CONTROL = 'CONTROL',
-  TELEMETRY = 'TELEMETRY',
+  ADMIN = 'ADMIN',
+  FAULT_MANAGEMENT = 'FAULT_MANAGEMENT',
+  PATH_PLANNING = 'PATH_PLANNING',
+  FULL_AUTO = 'FULL_AUTO',
+  MANUAL_SEMI_AUTO = 'MANUAL_SEMI_AUTO', // The main control page
+  REMOTE_INTERFACE = 'REMOTE_INTERFACE',
+  SETTINGS = 'SETTINGS', // Keep for general config
   AI_CHAT = 'AI_CHAT',
-  SETTINGS = 'SETTINGS',
 }
 
 export interface RobotStatus {
