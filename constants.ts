@@ -3,20 +3,20 @@ import { CarouselItem } from './types';
 export const CAROUSEL_ITEMS: CarouselItem[] = [
   {
     id: 1,
-    title: "NEURAL LINK",
-    description: "Direct low-latency connection to Singularity Core.",
+    title: "神经链路",
+    description: "直连奇点核心的低延迟通道。",
     image: "https://picsum.photos/800/600?grayscale&blur=2"
   },
   {
     id: 2,
-    title: "PRECISION DRIVE",
-    description: "Omni-directional movement with haptic feedback.",
+    title: "精准驱动",
+    description: "带触觉反馈的全向移动控制。",
     image: "https://picsum.photos/801/600?grayscale&blur=2"
   },
   {
     id: 3,
-    title: "AI ASSISTANCE",
-    description: "Gemini-powered autonomous decision making.",
+    title: "AI 辅助",
+    description: "由 Gemini 驱动的自主决策系统。",
     image: "https://picsum.photos/802/600?grayscale&blur=2"
   }
 ];

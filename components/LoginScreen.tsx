@@ -74,9 +74,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
 
         <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
             <h3 className="text-2xl font-bold mb-1 text-slate-800 text-center">
-                {isRegistering ? 'INITIALIZE LINK' : 'WELCOME BACK'}
+                {isRegistering ? '初始化连接' : '欢迎回来'}
             </h3>
-            <p className="text-center text-slate-500 mb-8 text-sm">Enter credentials to access Singularity Core</p>
+            <p className="text-center text-slate-500 mb-8 text-sm">请输入凭证以访问奇点核心</p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
             <div className="relative group">
@@ -85,7 +85,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
                 </div>
                 <input
                 type="text"
-                placeholder="ROBOT IP"
+                placeholder="机器人 IP"
                 value={robotIp}
                 onChange={(e) => setRobotIp(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sci-blue focus:ring-4 focus:ring-blue-500/10 transition-all font-mono shadow-sm"
@@ -98,7 +98,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
                 </div>
                 <input
                 type="password"
-                placeholder="ACCESS KEY"
+                placeholder="访问密钥"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sci-purple focus:ring-4 focus:ring-purple-500/10 transition-all font-mono shadow-sm"
@@ -108,7 +108,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
             {!isRegistering && (
                 <div className="flex justify-end">
                 <button type="button" className="text-xs font-semibold text-sci-blue hover:text-sci-purple transition-colors">
-                    FORGOT KEY?
+                    忘记密钥？
                 </button>
                 </div>
             )}
@@ -121,11 +121,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
                 {isLoading ? (
                     <>
                         <Loader2 size={20} className="animate-spin" />
-                        <span>CONNECTING...</span>
+                        <span>连接中...</span>
                     </>
                 ) : (
                     <>
-                        <span>{isRegistering ? 'ESTABLISH LINK' : 'CONNECT'}</span>
+                        <span>{isRegistering ? '建立连接' : '连接'}</span>
                         <ArrowRight size={20} />
                     </>
                 )}
@@ -134,12 +134,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
 
             <div className="mt-8 text-center">
             <p className="text-sm text-slate-500">
-                {isRegistering ? 'Already have clearance?' : 'New operator?'}
+                {isRegistering ? '已有权限？' : '新操作员？'}
                 <button
                 onClick={() => setIsRegistering(!isRegistering)}
                 className="ml-2 text-slate-800 font-bold hover:text-sci-blue transition-colors"
                 >
-                {isRegistering ? 'LOGIN' : 'REGISTER'}
+                {isRegistering ? '登录' : '注册'}
                 </button>
             </p>
             </div>

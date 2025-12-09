@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentView, onChang
       {/* Sidebar Panel - Light Theme */}
       <div className={`fixed top-0 left-0 bottom-0 w-64 bg-white/90 backdrop-blur-xl border-r border-white/50 shadow-2xl z-50 transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-white to-slate-50">
-          <h2 className="text-xl font-bold font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-sci-blue to-sci-purple">MENU</h2>
+          <h2 className="text-xl font-bold font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-sci-blue to-sci-purple">菜单</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-sci-blue transition-colors">
             <ChevronLeft size={24} />
           </button>

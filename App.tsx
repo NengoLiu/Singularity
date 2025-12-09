@@ -26,7 +26,7 @@ const App: React.FC = () => {
   // Chat State
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<{role: 'user' | 'model', text: string}[]>([
-      { role: 'model', text: 'Singularity Core Online. How can I assist with the mission?' }
+      { role: 'model', text: '奇点核心已上线。有什么可以帮您的？' }
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
@@ -91,7 +91,7 @@ const App: React.FC = () => {
             contents: [
                 {
                     role: 'user',
-                    parts: [{ text: `You are the AI onboard a futuristic robot. Keep responses brief and robotic. User says: ${userMsg}` }]
+                    parts: [{ text: `You are the AI onboard a futuristic robot. Respond in Chinese. Keep responses brief and robotic. User says: ${userMsg}` }]
                 }
             ]
         });
@@ -133,7 +133,7 @@ const App: React.FC = () => {
                                 type="text"
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
-                                placeholder="Command Singularity..."
+                                placeholder="向奇点发送指令..."
                                 className="w-full bg-slate-50 border border-slate-200 rounded-full py-4 pl-6 pr-14 focus:outline-none focus:border-sci-blue focus:ring-2 focus:ring-blue-100 text-slate-700 shadow-inner"
                             />
                             <button type="submit" disabled={isChatLoading} className="absolute right-2 top-2 p-2 bg-gradient-to-r from-sci-blue to-sci-purple rounded-full text-white shadow-md hover:shadow-lg transition-all">
@@ -149,8 +149,8 @@ const App: React.FC = () => {
                       <div className="w-32 h-32 rounded-full bg-white flex items-center justify-center shadow-lg mb-6">
                         <Terminal size={48} className="text-sci-blue opacity-50" />
                       </div>
-                      <p className="text-lg font-bold text-slate-600">MODULE: {view}</p>
-                      <p className="text-xs mt-2 bg-slate-200 px-3 py-1 rounded-full text-slate-500">ACCESS RESTRICTED</p>
+                      <p className="text-lg font-bold text-slate-600">模块: {view}</p>
+                      <p className="text-xs mt-2 bg-slate-200 px-3 py-1 rounded-full text-slate-500">访问受限</p>
                   </div>
               );
       }
@@ -173,7 +173,7 @@ const App: React.FC = () => {
                 <div className="flex items-center space-x-6">
                      <span className={`font-mono text-xs font-bold tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full ${isDemoMode ? 'bg-orange-100 text-orange-500' : 'bg-blue-50 text-sci-blue'}`}>
                         {isDemoMode ? <ZapOff size={14} /> : <Wifi size={14} />}
-                        {isDemoMode ? 'OFFLINE MODE' : `ONLINE: ${connectionUrl.split('://')[1]}`}
+                        {isDemoMode ? '离线模式' : `在线: ${connectionUrl.split('://')[1]}`}
                     </span>
                     <div className="flex items-center space-x-2 text-slate-500">
                         <Battery size={18} className={robotStatus.battery < 20 ? 'text-red-500' : 'text-emerald-500'} />
