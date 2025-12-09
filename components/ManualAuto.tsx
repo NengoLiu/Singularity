@@ -64,8 +64,9 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
                     {/* ================= KINEMATIC CHAIN START ================= */}
 
                     {/* 1. YAW GROUP (Base Rotation around Z) */}
+                    {/* FIXED: Added 180deg to make arm point towards viewer initially */}
                     <div className="w-0 h-0 relative transition-transform duration-300 ease-out" 
-                         style={{ transformStyle: 'preserve-3d', transform: `rotateZ(${yaw}deg)` }}>
+                         style={{ transformStyle: 'preserve-3d', transform: `rotateZ(${yaw + 180}deg)` }}>
                         
                         {/* Base Visual (The Cylinder on the right in your diagram) */}
                         <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-slate-700 shadow-xl border-4 border-slate-600" 
@@ -75,9 +76,7 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
                              </div>
                         </div>
 
-                        {/* 2. THE ARM (Extending along +Y axis, which is "down" on screen in 2D, but we rotate it to face viewer) */}
-                        {/* Per your request: "Arm pointing out of screen towards us". In CSS 3D with rotateX(60), +Y points "down/towards". */}
-                        
+                        {/* 2. THE ARM (Extending along +Y axis) */}
                         <div className="absolute top-0 left-[-10px] w-[20px] h-[180px] origin-top"
                              style={{ 
                                  transformStyle: 'preserve-3d',
