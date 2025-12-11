@@ -69,9 +69,9 @@ export interface MachineModeResponse {
 
 export class ROS2Connection {
   private ros: ROSLIB.Ros | null = null;
-  private pumpTopic: ROSLIB.Topic<any> | null = null;
-  private chassisTopic: ROSLIB.Topic<any> | null = null;
-  private armTopic: ROSLIB.Topic<any> | null = null;
+  private pumpTopic: ROSLIB.Topic<PumpMessage> | null = null;
+  private chassisTopic: ROSLIB.Topic<ChassisControlMessage> | null = null;
+  private armTopic: ROSLIB.Topic<ArmControlMessage> | null = null;
   private pumpTopicReady = false; 
   private chassisTopicReady = false; 
   private armTopicReady = false; 
@@ -99,7 +99,7 @@ export class ROS2Connection {
     }
   
     try {
-      this.pumpTopic = new ROSLIB.Topic({
+      this.pumpTopic = new ROSLIB.Topic<PumpMessage>({
         ros: this.ros,
         name: '/pump_control',
         messageType: 'web_connect/msg/Pump'
@@ -108,7 +108,7 @@ export class ROS2Connection {
       this.pumpTopicReady = true; 
       console.log('✓ 泵控制话题已初始化并发布');
   
-      this.chassisTopic = new ROSLIB.Topic({
+      this.chassisTopic = new ROSLIB.Topic<ChassisControlMessage>({
         ros: this.ros,
         name: '/chassis_control',
         messageType: 'web_connect/msg/Chassis'
@@ -117,7 +117,7 @@ export class ROS2Connection {
       this.chassisTopicReady = true;
       console.log('✓ 底盘控制话题已初始化并发布');
   
-      this.armTopic = new ROSLIB.Topic({
+      this.armTopic = new ROSLIB.Topic<ArmControlMessage>({
         ros: this.ros,
         name: '/arm_control',
         messageType: 'web_connect/msg/Arm'
@@ -205,7 +205,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new (ROSLIB as any).ServiceRequest({ establish });
+        const request = { establish };
         service.callService(request, 
           (result: ConnectionEstablishResponse) => resolve(result.establish_ack),
           (error: any) => reject(error)
@@ -227,7 +227,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new (ROSLIB as any).ServiceRequest({ motor_cmd });
+        const request = { motor_cmd };
         service.callService(request,
           (result: ChassisEnableResponse) => resolve(result.motor_ack),
           (error: any) => reject(error)
@@ -249,7 +249,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new (ROSLIB as any).ServiceRequest({ motor_cmd });
+        const request = { motor_cmd };
         service.callService(request,
           (result: ArmEnableResponse) => resolve(result.arm_ack),
           (error: any) => reject(error)
@@ -268,7 +268,7 @@ export class ROS2Connection {
       if (!this.chassisTopic || !this.chassisTopicReady) return;
     }
   
-    const rosMessage = new (ROSLIB as any).Message(message);
+    const rosMessage = message;
     this.chassisTopic.publish(rosMessage);
   }
   
@@ -284,7 +284,7 @@ export class ROS2Connection {
       if (!this.pumpTopic || !this.pumpTopicReady) return;
     }
   
-    const rosMessage = new (ROSLIB as any).Message(message);
+    const rosMessage = message;
     this.pumpTopic.publish(rosMessage);
   }
   
@@ -300,7 +300,7 @@ export class ROS2Connection {
       if (!this.armTopic || !this.armTopicReady) return;
     }
   
-    const rosMessage = new (ROSLIB as any).Message(message);
+    const rosMessage = message;
     this.armTopic.publish(rosMessage);
   }
 
@@ -318,7 +318,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new (ROSLIB as any).ServiceRequest({ blade_roller, direction, width, length, thickness });
+        const request = { blade_roller, direction, width, length, thickness };
         service.callService(request,
         (result: SemiModeResponse) => resolve(result.ack),
         (error: any) => reject(error)
@@ -340,7 +340,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new (ROSLIB as any).ServiceRequest({ stop_cmd });
+        const request = { stop_cmd };
         service.callService(request,
         (result: StopResponse) => resolve(result.stop_ack),
         (error: any) => reject(error)
@@ -362,7 +362,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new (ROSLIB as any).ServiceRequest({ mode_cmd });
+        const request = { mode_cmd };
         service.callService(request,
         (result: MachineModeResponse) => resolve(result.mode_ack),
         (error: any) => reject(error)
