@@ -1,0 +1,6 @@
+/* 
+  STYLES MOVED TO INDEX.HTML 
+  Because we are using Tailwind v4 in Browser/CDN mode for this preview environment,
+  styles must be inside a <style type="text/tailwindcss"> block in the HTML 
+  for the runtime compiler to process the @theme configuration correctly.
+*/

@@ -31,8 +31,18 @@ const App: React.FC = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
 
   const handleLogin = async (ip: string) => {
-      const wsUrl = `ws://${ip}`;
-      console.log(`Initializing Neural Link Protocol to: ${wsUrl}`);
+      // FIX: Automatically select Secure WebSocket (wss) if the page is loaded via HTTPS
+      // This prevents the "Mixed Content" security error in browsers.
+      const isSecure = window.location.protocol === 'https:';
+      const protocol = isSecure ? 'wss' : 'ws';
+      
+      // Default ROS Bridge port is 9090 if not specified
+      const cleanIp = ip.trim();
+      const host = cleanIp.includes(':') ? cleanIp : `${cleanIp}:9090`;
+      
+      const wsUrl = `${protocol}://${host}`;
+      
+      console.log(`Initializing Neural Link Protocol to: ${wsUrl} (Secure Mode: ${isSecure})`);
       
       setIsLoginLoading(true);
 
@@ -46,7 +56,9 @@ const App: React.FC = () => {
             setRobotStatus(prev => ({ ...prev, isOnline: true }));
             setIsDemoMode(false);
           } catch (error) {
-            console.warn("Connection failed, switching to VIRTUAL LINK (Mock Mode)", error);
+            console.warn("Connection failed or blocked, switching to VIRTUAL LINK (Mock Mode)", error);
+            // If connection fails (e.g. wss not supported by robot), fall back to Mock Mode
+            // This ensures the app is usable even if the real connection is blocked by browser policies
             ros2Connection.setMockMode(true);
             setConnectionUrl(wsUrl); 
             setRobotStatus(prev => ({ ...prev, isOnline: true, signalStrength: 100 })); 

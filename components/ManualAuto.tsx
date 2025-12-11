@@ -12,171 +12,77 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
     const heightOffset = -(height / 8) * 40; 
 
     return (
-        <div className={`w-full h-80 bg-slate-50 rounded-2xl border border-slate-200 relative overflow-hidden flex items-center justify-center transition-all duration-500 ${!enabled ? 'grayscale opacity-70' : ''}`}>
+        <div className={`w-full h-full bg-slate-50/50 relative overflow-hidden flex items-center justify-center transition-all duration-500 ${!enabled ? 'grayscale opacity-70' : ''}`}>
             
             {/* Info Overlay */}
-            <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 pointer-events-none">
-                <div className="flex items-center gap-2 text-sci-blue font-bold text-xs tracking-wider">
-                    <Axis3d size={16} />
-                    <span>REAL-TIME TWIN</span>
+            <div className="absolute top-2 left-2 z-10 flex flex-col gap-0.5 pointer-events-none">
+                <div className="flex items-center gap-1 text-sci-blue font-bold text-[10px] tracking-wider">
+                    <Axis3d size={12} />
+                    <span>TWIN</span>
                 </div>
-                <div className="text-[10px] text-slate-400">Z-Up Coordinate System</div>
             </div>
 
             {/* 3D Scene Container */}
-            <div className="relative w-full h-full perspective-container" style={{ perspective: '1200px' }}>
-                
-                {/* 
-                    World Transform: 
-                    Rotate X to look down at an angle (Isometric-ish).
-                    Translate Y to push it back a bit so "arm towards us" doesn't clip.
-                */}
-                <div className="absolute top-1/2 left-1/2 w-0 h-0" 
+            <div className="relative w-full h-full perspective-container" style={{ perspective: '800px' }}>
+                <div className="absolute top-[60%] left-1/2 w-0 h-0" 
                      style={{ 
                          transformStyle: 'preserve-3d', 
-                         transform: 'translateZ(-100px) rotateX(60deg) rotateZ(0deg)' 
+                         transform: 'translateZ(-100px) rotateX(60deg) rotateZ(0deg) scale(0.8)' 
                      }}>
 
-                    {/* --- WORLD AXIS HELPER (At Origin) --- */}
-                    <div className="absolute top-0 left-0 w-0 h-0 pointer-events-none">
-                        {/* X Axis (Red) */}
-                        <div className="absolute top-0 left-0 h-0.5 bg-red-500 w-24 origin-left" style={{ transform: 'rotateZ(0deg)' }}></div>
-                        <div className="absolute top-0 left-24 text-[8px] text-red-500 font-bold">X</div>
-                        
-                        {/* Y Axis (Green) - Points "Away" from user in default CSS 3D, we use -Y as "Towards" */}
-                        <div className="absolute top-0 left-0 h-0.5 bg-green-500 w-24 origin-left" style={{ transform: 'rotateZ(90deg)' }}></div>
-                        <div className="absolute top-24 left-0 text-[8px] text-green-500 font-bold">Y</div>
-                        
-                        {/* Z Axis (Blue) - Vertical Up */}
-                        <div className="absolute top-0 left-0 h-0.5 bg-blue-500 w-24 origin-left" style={{ transform: 'rotateY(-90deg)' }}></div>
-                        <div className="absolute -top-24 left-0 text-[8px] text-blue-500 font-bold" style={{ transform: 'rotateX(-90deg)' }}>Z</div>
-                    </div>
-
-                    {/* --- GROUND GRID --- */}
-                    <div className="absolute -top-[200px] -left-[200px] w-[400px] h-[400px] border border-slate-300/30 opacity-30" 
+                    {/* Ground Grid - Smaller for compact view */}
+                    <div className="absolute -top-[150px] -left-[150px] w-[300px] h-[300px] border border-slate-300/30 opacity-30" 
                          style={{ 
                              backgroundImage: 'linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px)', 
-                             backgroundSize: '40px 40px',
-                             transform: 'translateZ(-20px)' // Slightly below origin
+                             backgroundSize: '30px 30px',
+                             transform: 'translateZ(-20px)' 
                          }} 
                     />
 
-                    {/* ================= KINEMATIC CHAIN START ================= */}
-
-                    {/* 1. YAW GROUP (Base Rotation around Z) */}
-                    {/* FIXED: Added 180deg to make arm point towards viewer initially */}
+                    {/* KINEMATIC CHAIN */}
+                    {/* 1. YAW GROUP */}
                     <div className="w-0 h-0 relative transition-transform duration-300 ease-out" 
                          style={{ transformStyle: 'preserve-3d', transform: `rotateZ(${yaw + 180}deg)` }}>
                         
-                        {/* Base Visual (The Cylinder on the right in your diagram) */}
-                        <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-slate-700 shadow-xl border-4 border-slate-600" 
+                        {/* Base */}
+                        <div className="absolute -top-5 -left-5 w-10 h-10 rounded-full bg-slate-700 shadow-xl border-4 border-slate-600" 
                              style={{ transform: 'translateZ(0px)' }}>
-                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" /> {/* Pivot Point */}
-                             </div>
                         </div>
 
-                        {/* 2. THE ARM (Extending along +Y axis) */}
-                        <div className="absolute top-0 left-[-10px] w-[20px] h-[180px] origin-top"
-                             style={{ 
-                                 transformStyle: 'preserve-3d',
-                                 transform: 'translateZ(20px)' // Lifted off the ground
-                             }}>
+                        {/* 2. THE ARM */}
+                        <div className="absolute top-0 left-[-8px] w-[16px] h-[140px] origin-top"
+                             style={{ transformStyle: 'preserve-3d', transform: 'translateZ(15px)' }}>
+                            <div className="w-full h-full bg-gradient-to-r from-slate-200 to-slate-300 border border-slate-400 shadow-lg relative"></div>
                             
-                            {/* Aluminum Profile Visual */}
-                            <div className="w-full h-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-300 border border-slate-400 shadow-lg relative">
-                                <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-slate-400/30"></div>
-                                <div className="absolute top-10 left-0 w-full h-[2px] bg-black/10"></div>
-                                <div className="absolute top-20 left-0 w-full h-[2px] bg-black/10"></div>
-                                <div className="absolute bottom-4 left-0 w-full text-[6px] text-slate-500 text-center -rotate-90 font-mono">ARM-2040</div>
-                            </div>
-                            
-                            {/* 3. LIFT & ROLL GROUP (Attached to end of arm) */}
+                            {/* 3. LIFT & ROLL GROUP */}
                             <div className="absolute bottom-0 left-1/2 w-0 h-0" style={{ transformStyle: 'preserve-3d' }}>
-                                
-                                {/* Fixed Housing for Lift (The vertical box at end of arm) */}
-                                <div className="absolute -left-[15px] -top-[10px] w-[30px] h-[30px] bg-slate-800 rounded-sm border border-slate-600"
-                                     style={{ transform: 'translateZ(10px)' }}> {/* Sits on top of arm end */}
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-slate-500 rounded-full"></div>
-                                </div>
+                                <div className="absolute -left-[12px] -top-[8px] w-[24px] h-[24px] bg-slate-800 rounded-sm border border-slate-600"
+                                     style={{ transform: 'translateZ(8px)' }}></div>
 
-                                {/* 4. LIFT PISTON (Moves along Z axis) */}
+                                {/* 4. LIFT PISTON */}
                                 <div className="absolute w-0 h-0 transition-transform duration-300 ease-linear"
-                                     style={{ 
-                                         transformStyle: 'preserve-3d',
-                                         transform: `translateZ(${heightOffset}px)` // Moves Down (Negative Z)
-                                     }}>
-                                    
-                                    {/* The Piston Rod */}
-                                    <div className="absolute -left-[4px] -top-[10px] w-[8px] h-[40px] bg-slate-300 border border-slate-400 origin-top"
-                                         style={{ transform: 'rotateX(-90deg)' }}> {/* Pointing Down */}
-                                    </div>
+                                     style={{ transformStyle: 'preserve-3d', transform: `translateZ(${heightOffset}px)` }}>
+                                    <div className="absolute -left-[3px] -top-[8px] w-[6px] h-[30px] bg-slate-300 border border-slate-400 origin-top"
+                                         style={{ transform: 'rotateX(-90deg)' }}></div>
 
-                                    {/* 5. ROLL GROUP (Attached to bottom of lift) */}
-                                    {/* User definition: Roll rotates around Vertical Axis (Z) */}
+                                    {/* 5. ROLL GROUP */}
                                     <div className="absolute w-0 h-0"
-                                         style={{ 
-                                             transformStyle: 'preserve-3d',
-                                             transform: `translateZ(-50px) rotateZ(${roll}deg)` // Positioned at bottom of piston
-                                         }}>
-
-                                        {/* Roll Motor/Housing (The "T" shape connection) */}
-                                        <div className="absolute -left-[12px] -top-[12px] w-[24px] h-[24px] bg-slate-700 rounded-md border border-slate-500 shadow-md">
-                                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-[12px] h-[4px] bg-slate-600"></div> {/* Connection to piston */}
+                                         style={{ transformStyle: 'preserve-3d', transform: `translateZ(-40px) rotateZ(${roll}deg)` }}>
+                                        <div className="absolute -left-[40px] -top-[1px] w-[80px] h-[3px] bg-slate-400" style={{ transform: 'translateZ(-8px)' }}>
+                                            <div className="absolute left-0 top-0 w-[3px] h-[15px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
+                                            <div className="absolute right-0 top-0 w-[3px] h-[15px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
                                         </div>
-
-                                        {/* 6. ROLLER BRACKET & ROLLER */}
-                                        {/* Initial State: Roller perpendicular to Arm. Arm is Y, so Roller is X. */}
-                                        
-                                        {/* The Bracket (U-Shape) */}
-                                        <div className="absolute -left-[60px] -top-[2px] w-[120px] h-[4px] bg-slate-400" style={{ transform: 'translateZ(-10px)' }}>
-                                            {/* Side Arms of Bracket */}
-                                            <div className="absolute left-0 top-0 w-[4px] h-[20px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
-                                            <div className="absolute right-0 top-0 w-[4px] h-[20px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
-                                        </div>
-
-                                        {/* THE ROLLER (Cylinder) */}
-                                        <div className="absolute -left-[55px] -top-[8px] w-[110px] h-[16px] rounded-full"
+                                        {/* Roller */}
+                                        <div className="absolute -left-[38px] -top-[6px] w-[76px] h-[12px] rounded-full"
                                              style={{ 
-                                                 transform: 'translateZ(-25px)', // Below bracket
-                                                 background: `
-                                                    repeating-linear-gradient(
-                                                        90deg,
-                                                        #e2e8f0,
-                                                        #e2e8f0 2px,
-                                                        #cbd5e1 4px,
-                                                        #e2e8f0 6px
-                                                    )
-                                                 `, // Fuzzy texture simulation
-                                                 boxShadow: 'inset 0 0 10px rgba(0,0,0,0.2)'
-                                             }}>
-                                             {/* Roller End Caps */}
-                                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-600 rounded-l-full"></div>
-                                             <div className="absolute right-0 top-0 bottom-0 w-1 bg-slate-600 rounded-r-full"></div>
-                                        </div>
-
+                                                 transform: 'translateZ(-20px)',
+                                                 background: 'repeating-linear-gradient(90deg, #e2e8f0, #cbd5e1 4px)',
+                                                 boxShadow: 'inset 0 0 5px rgba(0,0,0,0.2)'
+                                             }}></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Readout Overlay */}
-            <div className="absolute bottom-2 right-3 text-right bg-white/80 backdrop-blur-sm p-2 rounded-lg border border-white shadow-sm">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center justify-end gap-2 text-xs font-mono text-slate-600">
-                        <span className="font-bold text-orange-500">YAW (Z)</span>
-                        <span className="bg-slate-100 px-1.5 rounded w-10 text-center border border-slate-200">{yaw}°</span>
-                    </div>
-                    <div className="flex items-center justify-end gap-2 text-xs font-mono text-slate-600">
-                        <span className="font-bold text-sci-purple">LIFT (Z)</span>
-                        <span className="bg-slate-100 px-1.5 rounded w-10 text-center border border-slate-200">{height}</span>
-                    </div>
-                    <div className="flex items-center justify-end gap-2 text-xs font-mono text-slate-600">
-                        <span className="font-bold text-sci-blue">ROLL (Z)</span>
-                        <span className="bg-slate-100 px-1.5 rounded w-10 text-center border border-slate-200">{roll}°</span>
                     </div>
                 </div>
             </div>
@@ -314,8 +220,6 @@ const ManualAuto: React.FC = () => {
   };
 
   // --- SEMI AUTO HANDLERS ---
-  
-  // Helper for float precision sliders
   const updateFloatParam = (setter: React.Dispatch<React.SetStateAction<number>>, current: number, delta: number, min: number, max: number, precision: number = 1) => {
       const next = Math.min(max, Math.max(min, current + delta));
       setter(parseFloat(next.toFixed(precision)));
@@ -323,19 +227,10 @@ const ManualAuto: React.FC = () => {
 
   const handleStartConstruction = async () => {
       try {
-          // Send parameters via /semi_mode service
-          const ack = await ros2Connection.sendSemiModeRequest(
-              coatingType,
-              direction,
-              paramWidth,
-              paramLength,
-              paramThickness
-          );
-
+          const ack = await ros2Connection.sendSemiModeRequest(coatingType, direction, paramWidth, paramLength, paramThickness);
           if (ack === 1) {
               setIsConstructing(true);
               setSemiAutoAck('指令已下发: 开始施工');
-              // Clear message after 3 seconds
               setTimeout(() => setSemiAutoAck(''), 3000);
           } else {
               setSemiAutoAck('错误: 机器未响应');
@@ -348,9 +243,7 @@ const ManualAuto: React.FC = () => {
 
   const handleChangeCartridge = async () => {
       try {
-          // Send stop_cmd = 2 (Change Cartridge) via /stop service
           const ack = await ros2Connection.sendStopRequest(2);
-          
           if (ack === 1) {
               setIsConstructing(false);
               setSemiAutoAck('指令已下发: 更换料筒/停止');
@@ -366,7 +259,6 @@ const ManualAuto: React.FC = () => {
   // Chassis Loop
   useEffect(() => {
     if (!chassisEnabled) return;
-
     const interval = setInterval(() => {
         const { up, down, left, right } = movementRef.current;
         const isMoving = up || down || left || right || zRotation !== 0;
@@ -375,22 +267,17 @@ const ManualAuto: React.FC = () => {
             const scale = chassisSpeedSetting / 1000.0; 
             let x_speed = 0;
             let y_speed = 0;
-
-            if (up) x_speed += scale;      // Forward
-            if (down) x_speed -= scale;    // Backward
-            if (left) y_speed += scale;    // Left
-            if (right) y_speed -= scale;   // Right
-
+            if (up) x_speed += scale;      
+            if (down) x_speed -= scale;    
+            if (left) y_speed += scale;    
+            if (right) y_speed -= scale;   
             const z_speed = zRotation * 30; 
-
             ros2Connection.publishChassisControl({ x_speed, y_speed, z_speed });
         }
     }, 100);
-
     return () => clearInterval(interval);
   }, [chassisEnabled, zRotation, chassisSpeedSetting]);
 
-  // Ensure 0 is sent when stopping
   useEffect(() => {
       const { up, down, left, right } = movementState;
       if(chassisEnabled && !up && !down && !left && !right && zRotation === 0) {
@@ -400,450 +287,296 @@ const ManualAuto: React.FC = () => {
 
 
   return (
-    <div className="flex flex-col h-full space-y-4" onMouseUp={handleGlobalEnd} onTouchEnd={handleGlobalEnd}>
-      {/* Top Tabs */}
-      <div className="flex space-x-1 bg-white/70 p-1.5 rounded-2xl w-fit mx-auto border border-white shadow-lg backdrop-blur-md sticky top-0 z-20">
-        <button
-          onClick={() => handleTabChange('MANUAL')}
-          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
-            activeTab === 'MANUAL' 
-              ? 'bg-gradient-to-r from-sci-blue to-blue-500 text-white shadow-md' 
-              : 'text-slate-500 hover:text-sci-blue hover:bg-white/50'
-          }`}
-        >
-          手动模式
-        </button>
-        <button
-          onClick={() => handleTabChange('SEMI')}
-          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
-            activeTab === 'SEMI' 
-              ? 'bg-gradient-to-r from-sci-purple to-purple-500 text-white shadow-md' 
-              : 'text-slate-500 hover:text-sci-purple hover:bg-white/50'
-          }`}
-        >
-          半自动模式
-        </button>
+    <div className="flex flex-col h-full w-full select-none" onMouseUp={handleGlobalEnd} onTouchEnd={handleGlobalEnd}>
+      
+      {/* --- Compact Tab Switcher --- */}
+      <div className="flex justify-center mb-1 shrink-0">
+          <div className="bg-white/80 p-1 rounded-full border border-white shadow-sm flex gap-1 backdrop-blur-sm">
+            <button
+              onClick={() => handleTabChange('MANUAL')}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                activeTab === 'MANUAL' 
+                  ? 'bg-sci-blue text-white shadow-sm' 
+                  : 'text-slate-500 hover:text-sci-blue'
+              }`}
+            >
+              手动控制
+            </button>
+            <button
+              onClick={() => handleTabChange('SEMI')}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                activeTab === 'SEMI' 
+                  ? 'bg-sci-purple text-white shadow-sm' 
+                  : 'text-slate-500 hover:text-sci-purple'
+              }`}
+            >
+              半自动施工
+            </button>
+          </div>
       </div>
 
       {activeTab === 'MANUAL' ? (
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 pb-20 px-1">
+        // === MANUAL QUADRANT LAYOUT ===
+        <div className="flex-1 grid grid-cols-2 grid-rows-[auto_1fr] gap-2 min-h-0 pb-1">
             
-            {/* 1. Device Enable Card */}
-            <div className="glass-panel lg:col-span-12 rounded-3xl p-6">
-                <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-4">
-                    <div className="p-1.5 bg-blue-100 text-sci-blue rounded-lg"><Power size={18} /></div>
-                    设备使能
-                </h3>
-                <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    <div className="flex items-center justify-between bg-white p-4 rounded-2xl flex-1 border border-slate-100 shadow-sm">
-                        <span className="text-slate-600 font-medium">底盘电机</span>
-                        <button 
-                            onClick={toggleChassis}
-                            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${
-                                chassisEnabled 
-                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+            {/* 1. TOP LEFT: Device Enable (Compact) */}
+            <div className="glass-panel rounded-2xl p-3 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-2 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                    <Power size={12} /> 系统使能
+                </div>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={toggleChassis}
+                        className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all ${
+                            chassisEnabled 
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                        }`}
+                    >
+                        <Move size={16} />
+                        {chassisEnabled ? '底盘 ON' : '底盘 OFF'}
+                    </button>
+                    <button 
+                            onClick={toggleArm}
+                            className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all ${
+                                armEnabled 
+                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
                                 : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                             }`}
-                        >
-                            {chassisEnabled ? '在线' : '离线'}
-                        </button>
-                    </div>
-                    <div className="flex items-center justify-between bg-white p-4 rounded-2xl flex-1 border border-slate-100 shadow-sm">
-                        <span className="text-slate-600 font-medium">机械臂</span>
-                        <button 
-                             onClick={toggleArm}
-                             className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${
-                                 armEnabled 
-                                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                                 : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                             }`}
-                        >
-                            {armEnabled ? '在线' : '离线'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* 2. Pump Control */}
-            <div className="glass-panel lg:col-span-4 rounded-3xl p-6">
-                <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-4">
-                    <div className="p-1.5 bg-cyan-100 text-sci-cyan rounded-lg"><Droplets size={18} /></div>
-                    水泵控制
-                </h3>
-                <div className="space-y-8">
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
-                        <span className="text-sm text-slate-500 font-medium ml-2">总开关</span>
-                        <button 
-                             onClick={togglePump}
-                             className={`w-14 h-8 rounded-full transition-all relative shadow-inner ${pumpOn ? 'bg-sci-cyan' : 'bg-slate-200'}`}
-                        >
-                            <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-all ${pumpOn ? 'left-7' : 'left-1'}`} />
-                        </button>
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>速度</span>
-                            <span className="text-sci-cyan bg-cyan-50 px-2 py-0.5 rounded">{pumpSpeed} ml/s</span>
-                        </div>
-                        <input 
-                            type="range" min="0" max="200" value={pumpSpeed}
-                            onChange={(e) => handlePumpSliderChange('speed', parseInt(e.target.value))}
-                            className="w-full accent-sci-cyan h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                    </div>
-
-                    <div className="space-y-3">
-                         <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>容量</span>
-                            <span className="text-sci-cyan bg-cyan-50 px-2 py-0.5 rounded">{pumpFluid} ml</span>
-                        </div>
-                        <input 
-                            type="range" min="0" max="12" value={pumpFluid}
-                            onChange={(e) => handlePumpSliderChange('fluid', parseInt(e.target.value))}
-                            className="w-full accent-sci-cyan h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* 3. Chassis Control */}
-            <div className={`glass-panel lg:col-span-4 rounded-3xl p-6 flex flex-col items-center transition-opacity duration-300 ${!chassisEnabled ? 'opacity-60 pointer-events-none grayscale' : ''}`}>
-                 <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-6 w-full">
-                    <div className="p-1.5 bg-blue-100 text-sci-blue rounded-lg"><Move size={18} /></div>
-                    底盘驱动
-                </h3>
-                
-                <div className="flex items-center gap-6 mb-8 w-full justify-center">
-                    {/* D-PAD */}
-                    <div className="grid grid-cols-3 gap-2">
-                        {/* Row 1 */}
-                        <div className="col-start-2">
-                             <button
-                                className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-100 shadow-md ${
-                                    movementState.up 
-                                    ? 'bg-sci-blue text-white translate-y-1 shadow-inner' 
-                                    : 'bg-white text-sci-blue border border-blue-100 hover:border-sci-blue hover:shadow-lg'
-                                }`}
-                                onMouseDown={() => handleDirectionStart('up')}
-                                onMouseUp={() => handleDirectionEnd('up')}
-                                onMouseLeave={() => handleDirectionEnd('up')}
-                                onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('up'); }}
-                                onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('up'); }}
-                             >
-                                <ChevronUp size={32} />
-                             </button>
-                        </div>
-                        
-                        {/* Row 2 */}
-                        <div className="col-start-1 row-start-2">
-                            <button
-                                className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-100 shadow-md ${
-                                    movementState.left
-                                    ? 'bg-sci-blue text-white translate-y-1 shadow-inner' 
-                                    : 'bg-white text-sci-blue border border-blue-100 hover:border-sci-blue hover:shadow-lg'
-                                }`}
-                                onMouseDown={() => handleDirectionStart('left')}
-                                onMouseUp={() => handleDirectionEnd('left')}
-                                onMouseLeave={() => handleDirectionEnd('left')}
-                                onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('left'); }}
-                                onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('left'); }}
-                             >
-                                <ChevronLeft size={32} />
-                             </button>
-                        </div>
-                        <div className="col-start-3 row-start-2">
-                            <button
-                                className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-100 shadow-md ${
-                                    movementState.right
-                                    ? 'bg-sci-blue text-white translate-y-1 shadow-inner' 
-                                    : 'bg-white text-sci-blue border border-blue-100 hover:border-sci-blue hover:shadow-lg'
-                                }`}
-                                onMouseDown={() => handleDirectionStart('right')}
-                                onMouseUp={() => handleDirectionEnd('right')}
-                                onMouseLeave={() => handleDirectionEnd('right')}
-                                onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('right'); }}
-                                onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('right'); }}
-                             >
-                                <ChevronRight size={32} />
-                             </button>
-                        </div>
-
-                        {/* Row 3 */}
-                        <div className="col-start-2 row-start-3">
-                             <button
-                                className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-100 shadow-md ${
-                                    movementState.down
-                                    ? 'bg-sci-blue text-white translate-y-1 shadow-inner' 
-                                    : 'bg-white text-sci-blue border border-blue-100 hover:border-sci-blue hover:shadow-lg'
-                                }`}
-                                onMouseDown={() => handleDirectionStart('down')}
-                                onMouseUp={() => handleDirectionEnd('down')}
-                                onMouseLeave={() => handleDirectionEnd('down')}
-                                onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('down'); }}
-                                onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('down'); }}
-                             >
-                                <ChevronDown size={32} />
-                             </button>
-                        </div>
-                    </div>
-
-                    {/* Rotation Controls */}
-                    <div className="flex flex-col gap-3 ml-4">
-                        <button 
-                            className={`p-4 rounded-2xl border transition-all shadow-sm ${zRotation > 0 ? 'bg-sci-blue text-white border-transparent shadow-blue-500/30 translate-y-0.5' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
-                            onMouseDown={() => setZRotation(1)}
-                            onMouseUp={() => setZRotation(0)}
-                            onMouseLeave={() => setZRotation(0)}
-                            onTouchStart={(e) => { e.preventDefault(); setZRotation(1); }}
-                            onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
-                        >
-                            <RotateCcw size={24} />
-                        </button>
-                        <button 
-                            className={`p-4 rounded-2xl border transition-all shadow-sm ${zRotation < 0 ? 'bg-sci-blue text-white border-transparent shadow-blue-500/30 translate-y-0.5' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
-                            onMouseDown={() => setZRotation(-1)}
-                            onMouseUp={() => setZRotation(0)}
-                            onMouseLeave={() => setZRotation(0)}
-                            onTouchStart={(e) => { e.preventDefault(); setZRotation(-1); }}
-                            onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
-                        >
-                            <RotateCw size={24} />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="w-full bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mt-4">
-                    <div className="flex justify-between text-xs font-bold mb-3">
-                        <span className="text-slate-400">速度限制</span>
-                        <span className="text-sci-blue">{chassisSpeedSetting} mm/s</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setChassisSpeedSetting(Math.max(0, chassisSpeedSetting - 50))} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">-</button>
-                        <input 
-                            type="range" min="0" max="1000" step="50"
-                            value={chassisSpeedSetting}
-                            onChange={(e) => setChassisSpeedSetting(parseInt(e.target.value))}
-                            className="flex-1 accent-sci-blue h-2 bg-slate-200 rounded-lg appearance-none"
-                        />
-                        <button onClick={() => setChassisSpeedSetting(Math.min(1000, chassisSpeedSetting + 50))} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">+</button>
-                    </div>
-                </div>
-            </div>
-
-            {/* 4. Arm Control */}
-            <div className={`glass-panel lg:col-span-4 rounded-3xl p-6 transition-opacity duration-300 ${!armEnabled ? 'opacity-60 pointer-events-none grayscale' : ''}`}>
-                 <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-4">
-                    <div className="p-1.5 bg-purple-100 text-sci-purple rounded-lg"><GitCommit size={18} /></div>
-                    机械臂运动学
-                </h3>
-
-                {/* VISUALIZER INSERTED HERE */}
-                <div className="mb-6">
-                    <RobotArmViz yaw={armYaw} roll={armRoll} height={armHeight} enabled={armEnabled} />
-                </div>
-                
-                <div className="space-y-6">
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>偏航角 (Yaw)</span>
-                            <span className="text-sci-purple bg-purple-50 px-2 py-0.5 rounded">{armYaw}°</span>
-                        </div>
-                        <input 
-                            type="range" min="-90" max="90" value={armYaw}
-                            onChange={(e) => handleArmChange('yaw', parseInt(e.target.value))}
-                            className="w-full accent-sci-purple h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>翻滚角 (Roll)</span>
-                            <span className="text-sci-purple bg-purple-50 px-2 py-0.5 rounded">{armRoll}°</span>
-                        </div>
-                        <input 
-                            type="range" min="-180" max="180" value={armRoll}
-                            onChange={(e) => handleArmChange('roll', parseInt(e.target.value))}
-                            className="w-full accent-sci-purple h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>高度</span>
-                            <span className="text-sci-purple bg-purple-50 px-2 py-0.5 rounded">{armHeight} cm</span>
-                        </div>
-                        <input 
-                            type="range" min="0" max="8" value={armHeight}
-                            onChange={(e) => handleArmChange('height', parseInt(e.target.value))}
-                            className="w-full accent-sci-purple h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                    </div>
-
-                    <button 
-                        onClick={resetArm}
-                        className="w-full py-3 mt-4 bg-white border border-purple-200 text-sci-purple rounded-xl hover:bg-purple-50 transition-all font-bold text-sm shadow-sm"
                     >
-                        复位
+                        <GitCommit size={16} />
+                        {armEnabled ? '机械臂 ON' : '机械臂 OFF'}
                     </button>
                 </div>
             </div>
 
+            {/* 2. TOP RIGHT: Pump Control (Compact) */}
+            <div className="glass-panel rounded-2xl p-3 flex flex-col justify-center">
+                 <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                        <Droplets size={12} /> 水泵控制
+                    </div>
+                    <button 
+                             onClick={togglePump}
+                             className={`w-10 h-5 rounded-full transition-all relative shadow-inner ${pumpOn ? 'bg-sci-cyan' : 'bg-slate-200'}`}
+                        >
+                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${pumpOn ? 'left-5.5' : 'left-0.5'}`} />
+                    </button>
+                </div>
+                <div className="flex gap-3 items-center">
+                    <div className="flex-1 space-y-1">
+                        <div className="flex justify-between text-[10px] text-slate-400 font-bold">
+                            <span>速度</span> <span>{pumpSpeed}</span>
+                        </div>
+                        <input type="range" min="0" max="200" value={pumpSpeed}
+                            onChange={(e) => handlePumpSliderChange('speed', parseInt(e.target.value))}
+                            className="w-full accent-sci-cyan h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <div className="flex justify-between text-[10px] text-slate-400 font-bold">
+                            <span>容量</span> <span>{pumpFluid}</span>
+                        </div>
+                        <input type="range" min="0" max="12" value={pumpFluid}
+                            onChange={(e) => handlePumpSliderChange('fluid', parseInt(e.target.value))}
+                            className="w-full accent-sci-cyan h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. BOTTOM LEFT: Chassis Drive (Maximised Control Area) */}
+            <div className={`glass-panel rounded-2xl p-2 relative flex flex-col items-center justify-center transition-opacity ${!chassisEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+                 <div className="absolute top-2 left-3 text-slate-400 text-[10px] font-bold">DRIVE</div>
+                 
+                 <div className="flex items-center gap-6">
+                    {/* Rotation Left */}
+                    <button 
+                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation > 0 ? 'bg-sci-blue text-white border-transparent' : 'bg-white text-slate-400 border-slate-200'}`}
+                        onMouseDown={() => setZRotation(1)} onMouseUp={() => setZRotation(0)} onMouseLeave={() => setZRotation(0)}
+                        onTouchStart={(e) => { e.preventDefault(); setZRotation(1); }} onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
+                    >
+                        <RotateCcw size={20} />
+                    </button>
+
+                    {/* D-PAD */}
+                    <div className="w-32 h-32 relative">
+                         <div className="absolute inset-0 bg-slate-100/50 rounded-full border border-slate-200"></div>
+                         {/* Up */}
+                         <button className={`absolute top-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-t-lg flex items-start justify-center pt-1 transition-colors ${movementState.up ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                            onMouseDown={() => handleDirectionStart('up')} onMouseUp={() => handleDirectionEnd('up')} onMouseLeave={() => handleDirectionEnd('up')}
+                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('up'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('up'); }}
+                         ><ChevronUp size={24} /></button>
+                         {/* Down */}
+                         <button className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-b-lg flex items-end justify-center pb-1 transition-colors ${movementState.down ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                            onMouseDown={() => handleDirectionStart('down')} onMouseUp={() => handleDirectionEnd('down')} onMouseLeave={() => handleDirectionEnd('down')}
+                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('down'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('down'); }}
+                         ><ChevronDown size={24} /></button>
+                         {/* Left */}
+                         <button className={`absolute left-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-l-lg flex items-center justify-start pl-1 transition-colors ${movementState.left ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                            onMouseDown={() => handleDirectionStart('left')} onMouseUp={() => handleDirectionEnd('left')} onMouseLeave={() => handleDirectionEnd('left')}
+                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('left'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('left'); }}
+                         ><ChevronLeft size={24} /></button>
+                         {/* Right */}
+                         <button className={`absolute right-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-r-lg flex items-center justify-end pr-1 transition-colors ${movementState.right ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                            onMouseDown={() => handleDirectionStart('right')} onMouseUp={() => handleDirectionEnd('right')} onMouseLeave={() => handleDirectionEnd('right')}
+                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('right'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('right'); }}
+                         ><ChevronRight size={24} /></button>
+                    </div>
+
+                    {/* Rotation Right */}
+                    <button 
+                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation < 0 ? 'bg-sci-blue text-white border-transparent' : 'bg-white text-slate-400 border-slate-200'}`}
+                        onMouseDown={() => setZRotation(-1)} onMouseUp={() => setZRotation(0)} onMouseLeave={() => setZRotation(0)}
+                        onTouchStart={(e) => { e.preventDefault(); setZRotation(-1); }} onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
+                    >
+                        <RotateCw size={20} />
+                    </button>
+                 </div>
+
+                 {/* Speed Slider */}
+                 <div className="absolute bottom-3 left-6 right-6 flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-slate-400 w-8">SPD</span>
+                    <input type="range" min="0" max="1000" step="50" value={chassisSpeedSetting}
+                        onChange={(e) => setChassisSpeedSetting(parseInt(e.target.value))}
+                        className="flex-1 accent-sci-blue h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                    <span className="text-[10px] font-bold text-sci-blue w-8 text-right">{chassisSpeedSetting}</span>
+                 </div>
+            </div>
+
+            {/* 4. BOTTOM RIGHT: Arm Control (Viz Background + Floating Controls) */}
+            <div className={`glass-panel rounded-2xl relative overflow-hidden flex flex-col transition-opacity ${!armEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+                 <div className="absolute inset-0 z-0">
+                    <RobotArmViz yaw={armYaw} roll={armRoll} height={armHeight} enabled={armEnabled} />
+                 </div>
+                 
+                 {/* Floating Overlay Controls */}
+                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/80 backdrop-blur-md border-t border-white/50 z-10 flex flex-col gap-2">
+                    <div className="flex gap-2 text-[10px] font-bold text-slate-500 mb-1">
+                        <span className="flex-1 text-center">YAW ({armYaw}°)</span>
+                        <span className="flex-1 text-center">ROLL ({armRoll}°)</span>
+                        <span className="flex-1 text-center">LIFT ({armHeight}cm)</span>
+                    </div>
+                    <div className="flex gap-2">
+                         <input type="range" min="-90" max="90" value={armYaw} onChange={(e) => handleArmChange('yaw', parseInt(e.target.value))}
+                            className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                         <input type="range" min="-180" max="180" value={armRoll} onChange={(e) => handleArmChange('roll', parseInt(e.target.value))}
+                            className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                         <input type="range" min="0" max="8" value={armHeight} onChange={(e) => handleArmChange('height', parseInt(e.target.value))}
+                            className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                    </div>
+                    <button onClick={resetArm} className="absolute top-[-30px] right-2 bg-white/90 p-1.5 rounded-lg shadow-sm text-xs font-bold text-sci-purple border border-purple-100">
+                        RESET
+                    </button>
+                 </div>
+            </div>
+
         </div>
       ) : (
-        /* --- SEMI AUTO INTERFACE --- */
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-5 pb-20 px-1">
+        // === SEMI AUTO 3-COLUMN LAYOUT ===
+        <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 px-1 pb-1">
             
-            {/* 1. Configuration: Mode & Direction */}
-            <div className="glass-panel lg:col-span-4 rounded-3xl p-6">
-                <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-6">
-                    <div className="p-1.5 bg-purple-100 text-sci-purple rounded-lg"><Activity size={18} /></div>
-                    模式配置
-                </h3>
+            {/* Col 1: Config (Compact) */}
+            <div className="col-span-3 glass-panel rounded-2xl p-3 flex flex-col gap-4">
+                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                    <Activity size={12} /> 模式配置
+                </div>
                 
-                <div className="space-y-6">
-                    {/* Coating Type Selection */}
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 mb-2 block">施工工艺</label>
-                        <div className="flex bg-white rounded-xl p-1 border border-slate-100">
-                            <button
-                                onClick={() => setCoatingType(0)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${coatingType === 0 ? 'bg-sci-purple text-white shadow-md' : 'text-slate-500 hover:text-sci-purple'}`}
-                            >
-                                <PaintRoller size={16} /> 刮涂
-                            </button>
-                            <button
-                                onClick={() => setCoatingType(1)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${coatingType === 1 ? 'bg-sci-purple text-white shadow-md' : 'text-slate-500 hover:text-sci-purple'}`}
-                            >
-                                <Layers size={16} /> 辊涂
-                            </button>
+                <div className="flex flex-col gap-2 flex-1">
+                     <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-slate-400 font-bold">工艺</span>
+                        <div className="flex gap-1">
+                            <button onClick={() => setCoatingType(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${coatingType === 0 ? 'bg-sci-purple text-white' : 'bg-slate-100 text-slate-400'}`}>刮涂</button>
+                            <button onClick={() => setCoatingType(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${coatingType === 1 ? 'bg-sci-purple text-white' : 'bg-slate-100 text-slate-400'}`}>辊涂</button>
+                        </div>
+                     </div>
+                     <div className="flex flex-col gap-1 mt-2">
+                        <span className="text-[10px] text-slate-400 font-bold">方向</span>
+                        <div className="flex gap-1">
+                            <button onClick={() => setDirection(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${direction === 0 ? 'bg-sci-blue text-white' : 'bg-slate-100 text-slate-400'}`}>向左</button>
+                            <button onClick={() => setDirection(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${direction === 1 ? 'bg-sci-blue text-white' : 'bg-slate-100 text-slate-400'}`}>向右</button>
+                        </div>
+                     </div>
+                </div>
+            </div>
+
+            {/* Col 2: Params (Sliders) */}
+            <div className="col-span-5 glass-panel rounded-2xl p-3 flex flex-col justify-center gap-4">
+                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                    <Ruler size={12} /> 施工参数
+                </div>
+                <div className="space-y-4">
+                    {/* Length */}
+                    <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-bold">
+                             <span className="text-slate-400">长度 (m)</span>
+                             <span className="text-sci-blue">{paramLength}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => updateFloatParam(setParamLength, paramLength, -0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">-</button>
+                            <input type="range" min="0" max="40" step="0.5" value={paramLength} onChange={(e) => setParamLength(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            <button onClick={() => updateFloatParam(setParamLength, paramLength, 0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">+</button>
                         </div>
                     </div>
-
-                    {/* Direction Selection */}
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 mb-2 block">作业方向</label>
-                        <div className="flex bg-white rounded-xl p-1 border border-slate-100">
-                            <button
-                                onClick={() => setDirection(0)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${direction === 0 ? 'bg-sci-blue text-white shadow-md' : 'text-slate-500 hover:text-sci-blue'}`}
-                            >
-                                <ArrowLeftRight size={16} className="rotate-180" /> 向左
-                            </button>
-                            <button
-                                onClick={() => setDirection(1)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${direction === 1 ? 'bg-sci-blue text-white shadow-md' : 'text-slate-500 hover:text-sci-blue'}`}
-                            >
-                                <ArrowLeftRight size={16} /> 向右
-                            </button>
+                    {/* Width */}
+                    <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-bold">
+                             <span className="text-slate-400">宽度 (m)</span>
+                             <span className="text-sci-blue">{paramWidth}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, -0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">-</button>
+                            <input type="range" min="0" max="2.4" step="0.1" value={paramWidth} onChange={(e) => setParamWidth(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, 0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">+</button>
+                        </div>
+                    </div>
+                     {/* Thickness */}
+                    <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-bold">
+                             <span className="text-slate-400">厚度 (mm)</span>
+                             <span className="text-sci-purple">{paramThickness}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, -0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">-</button>
+                            <input type="range" min="0" max="20" step="0.5" value={paramThickness} onChange={(e) => setParamThickness(parseFloat(e.target.value))} className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, 0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">+</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* 2. Parameter Sliders */}
-            <div className="glass-panel lg:col-span-8 rounded-3xl p-6">
-                 <h3 className="text-slate-800 font-bold flex items-center gap-2 mb-6">
-                    <div className="p-1.5 bg-blue-100 text-sci-blue rounded-lg"><Ruler size={18} /></div>
-                    施工参数
-                </h3>
-
-                <div className="space-y-8">
-                    {/* Length Slider */}
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>长度 (Length)</span>
-                            <span className="text-sci-blue bg-blue-50 px-2 py-0.5 rounded">{paramLength.toFixed(1)} m</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => updateFloatParam(setParamLength, paramLength, -0.5, 0, 40)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">-</button>
-                            <input 
-                                type="range" min="0" max="40" step="0.5" value={paramLength}
-                                onChange={(e) => setParamLength(parseFloat(e.target.value))}
-                                className="flex-1 accent-sci-blue h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <button onClick={() => updateFloatParam(setParamLength, paramLength, 0.5, 0, 40)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">+</button>
-                        </div>
-                    </div>
-
-                    {/* Width Slider */}
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>宽度 (Width)</span>
-                            <span className="text-sci-blue bg-blue-50 px-2 py-0.5 rounded">{paramWidth.toFixed(1)} m</span>
-                        </div>
-                         <div className="flex items-center gap-4">
-                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, -0.1, 0, 2.4)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">-</button>
-                            <input 
-                                type="range" min="0" max="2.4" step="0.1" value={paramWidth}
-                                onChange={(e) => setParamWidth(parseFloat(e.target.value))}
-                                className="flex-1 accent-sci-blue h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, 0.1, 0, 2.4)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">+</button>
-                        </div>
-                    </div>
-
-                    {/* Thickness Slider */}
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>厚度 (Thickness)</span>
-                            <span className="text-sci-purple bg-purple-50 px-2 py-0.5 rounded">{paramThickness.toFixed(1)} mm</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, -0.5, 0, 20)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">-</button>
-                            <input 
-                                type="range" min="0" max="20" step="0.5" value={paramThickness}
-                                onChange={(e) => setParamThickness(parseFloat(e.target.value))}
-                                className="flex-1 accent-sci-purple h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, 0.5, 0, 20)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">+</button>
-                        </div>
-                    </div>
+            {/* Col 3: Action */}
+            <div className="col-span-4 glass-panel rounded-2xl p-3 flex flex-col relative overflow-hidden">
+                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 mb-2">
+                    <Play size={12} /> 执行控制
                 </div>
-            </div>
 
-            {/* 3. Action Card */}
-            <div className="glass-panel lg:col-span-12 rounded-3xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
-                {/* Status Overlay */}
-                {semiAutoAck && (
-                    <div className="absolute top-4 bg-slate-800/80 text-white px-4 py-1 rounded-full text-xs font-mono animate-pulse">
-                        {semiAutoAck}
-                    </div>
-                )}
-
-                <div className="w-full max-w-md">
+                <div className="flex-1 flex flex-col justify-center items-center">
+                    {semiAutoAck && (
+                        <div className="absolute top-10 inset-x-2 bg-slate-800/90 text-white text-[10px] py-1 px-2 rounded text-center animate-pulse z-20">
+                            {semiAutoAck}
+                        </div>
+                    )}
+                    
                     {!isConstructing ? (
                          <button
                             onClick={handleStartConstruction}
                             disabled={!isConfigValid}
-                            className={`w-full py-6 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 transition-all ${
+                            className={`w-full h-full max-h-[160px] rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${
                                 isConfigValid 
-                                ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/30 hover:scale-[1.02]' 
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg active:scale-95' 
+                                : 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200'
                             }`}
                         >
-                            <Play size={28} fill="currentColor" />
-                            {isConfigValid ? '配置完成 - 开始施工' : '请先配置施工参数'}
+                            <Play size={32} fill="currentColor" />
+                            <span>开始施工</span>
                         </button>
                     ) : (
-                        <div className="space-y-4">
-                             <div className="text-center mb-4">
-                                <div className="inline-block p-3 bg-blue-50 text-sci-blue rounded-full mb-2 animate-bounce">
-                                    <Activity size={32} />
-                                </div>
-                                <h4 className="text-lg font-bold text-slate-700">正在施工中...</h4>
-                                <p className="text-slate-500 text-sm">Target: {paramLength}m x {paramWidth}m</p>
-                             </div>
-
-                             <button
-                                onClick={handleChangeCartridge}
-                                className="w-full py-6 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 transition-all bg-gradient-to-r from-red-500 to-red-400 text-white shadow-lg shadow-red-500/30 hover:scale-[1.02] animate-pulse-fast"
-                            >
-                                <RefreshCw size={28} className="animate-spin-slow" />
-                                更换料筒 / 停止施工
-                            </button>
-                        </div>
+                        <button
+                            onClick={handleChangeCartridge}
+                            className="w-full h-full max-h-[160px] rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg active:scale-95 animate-pulse"
+                        >
+                            <RefreshCw size={32} className="animate-spin-slow" />
+                            <span>紧急停止 / 换料</span>
+                        </button>
                     )}
                 </div>
             </div>

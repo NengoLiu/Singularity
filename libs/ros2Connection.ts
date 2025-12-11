@@ -1,5 +1,4 @@
-// Access global ROSLIB injected via script tag in index.html
-const ROSLIB = (window as any).ROSLIB;
+import * as ROSLIB from 'roslib';
 
 export interface ConnectionEstablishRequest {
   establish: number; // 0: 关机, 1: 开机
@@ -69,11 +68,10 @@ export interface MachineModeResponse {
 }
 
 export class ROS2Connection {
-  // Use 'any' for ROSLIB types since we are using the global object
-  private ros: any | null = null;
-  private pumpTopic: any | null = null;
-  private chassisTopic: any | null = null;
-  private armTopic: any | null = null;
+  private ros: ROSLIB.Ros | null = null;
+  private pumpTopic: ROSLIB.Topic<any> | null = null;
+  private chassisTopic: ROSLIB.Topic<any> | null = null;
+  private armTopic: ROSLIB.Topic<any> | null = null;
   private pumpTopicReady = false; 
   private chassisTopicReady = false; 
   private armTopicReady = false; 
@@ -151,27 +149,30 @@ export class ROS2Connection {
       
       const timeout = setTimeout(() => {
         if (this.ros) this.ros.close();
-        // Instead of rejecting, we can allow the UI to handle the fallback
         reject(new Error('连接超时'));
-      }, 2000); // Short timeout for faster fallback
+      }, 2000); 
 
-      this.ros = new ROSLIB.Ros({ url });
+      try {
+          this.ros = new ROSLIB.Ros({ url });
 
-      this.ros.on('connection', () => {
-        clearTimeout(timeout);
-        console.log('✓ 成功连接到 ROS2 服务器');
-		this.initTopics();
-        resolve();
-      });
+          this.ros.on('connection', () => {
+            clearTimeout(timeout);
+            console.log('✓ 成功连接到 ROS2 服务器');
+            this.initTopics();
+            resolve();
+          });
 
-      this.ros.on('error', (error: any) => {
-        // Keep error handler but let timeout handle the rejection for UX consistency
-        console.error('✗ ROS2 连接错误:', error);
-      });
+          this.ros.on('error', (error: any) => {
+            console.error('✗ ROS2 连接错误:', error);
+          });
 
-      this.ros.on('close', () => {
-        console.log('ROS2 连接已关闭');
-      });
+          this.ros.on('close', () => {
+            console.log('ROS2 连接已关闭');
+          });
+      } catch (e) {
+          clearTimeout(timeout);
+          reject(e);
+      }
     });
   }
 
@@ -180,7 +181,6 @@ export class ROS2Connection {
       this.ros.close();
       this.ros = null;
 	}
-	// Clean up topics
 	this.resetTopicStates();
 	console.log('已断开连接');
   }
@@ -205,7 +205,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new ROSLIB.ServiceRequest({ establish });
+        const request = new (ROSLIB as any).ServiceRequest({ establish });
         service.callService(request, 
           (result: ConnectionEstablishResponse) => resolve(result.establish_ack),
           (error: any) => reject(error)
@@ -216,7 +216,7 @@ export class ROS2Connection {
   sendChassisEnableRequest(motor_cmd: number): Promise<number> {
     if (this.mockMode) {
         console.log(`[MOCK] 底盘使能切换: ${motor_cmd}`);
-        return Promise.resolve(motor_cmd === 2 ? 0 : 1); // Return success
+        return Promise.resolve(motor_cmd === 2 ? 0 : 1); 
     }
     if (!this.ros) return Promise.reject(new Error('未连接ROS2'));
 
@@ -227,7 +227,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new ROSLIB.ServiceRequest({ motor_cmd });
+        const request = new (ROSLIB as any).ServiceRequest({ motor_cmd });
         service.callService(request,
           (result: ChassisEnableResponse) => resolve(result.motor_ack),
           (error: any) => reject(error)
@@ -249,7 +249,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new ROSLIB.ServiceRequest({ motor_cmd });
+        const request = new (ROSLIB as any).ServiceRequest({ motor_cmd });
         service.callService(request,
           (result: ArmEnableResponse) => resolve(result.arm_ack),
           (error: any) => reject(error)
@@ -259,8 +259,6 @@ export class ROS2Connection {
 
   publishChassisControl(message: ChassisControlMessage) {
     if (this.mockMode) {
-        // Only log periodically or it spams console
-        // console.log('[MOCK] 底盘控制:', message); 
         return;
     }
     if (!this.ros || !this.ros.isConnected) return;
@@ -270,7 +268,7 @@ export class ROS2Connection {
       if (!this.chassisTopic || !this.chassisTopicReady) return;
     }
   
-    const rosMessage = new ROSLIB.Message(message);
+    const rosMessage = new (ROSLIB as any).Message(message);
     this.chassisTopic.publish(rosMessage);
   }
   
@@ -286,7 +284,7 @@ export class ROS2Connection {
       if (!this.pumpTopic || !this.pumpTopicReady) return;
     }
   
-    const rosMessage = new ROSLIB.Message(message);
+    const rosMessage = new (ROSLIB as any).Message(message);
     this.pumpTopic.publish(rosMessage);
   }
   
@@ -302,7 +300,7 @@ export class ROS2Connection {
       if (!this.armTopic || !this.armTopicReady) return;
     }
   
-    const rosMessage = new ROSLIB.Message(message);
+    const rosMessage = new (ROSLIB as any).Message(message);
     this.armTopic.publish(rosMessage);
   }
 
@@ -320,7 +318,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new ROSLIB.ServiceRequest({ blade_roller, direction, width, length, thickness });
+        const request = new (ROSLIB as any).ServiceRequest({ blade_roller, direction, width, length, thickness });
         service.callService(request,
         (result: SemiModeResponse) => resolve(result.ack),
         (error: any) => reject(error)
@@ -342,7 +340,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new ROSLIB.ServiceRequest({ stop_cmd });
+        const request = new (ROSLIB as any).ServiceRequest({ stop_cmd });
         service.callService(request,
         (result: StopResponse) => resolve(result.stop_ack),
         (error: any) => reject(error)
@@ -364,7 +362,7 @@ export class ROS2Connection {
     });
 
     return new Promise((resolve, reject) => {
-        const request = new ROSLIB.ServiceRequest({ mode_cmd });
+        const request = new (ROSLIB as any).ServiceRequest({ mode_cmd });
         service.callService(request,
         (result: MachineModeResponse) => resolve(result.mode_ack),
         (error: any) => reject(error)

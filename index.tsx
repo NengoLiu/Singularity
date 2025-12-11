@@ -8,8 +8,24 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+
+try {
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+
+  // Fallback: Manually trigger loader removal slightly after render command
+  setTimeout(() => {
+    const loader = document.getElementById('startup-loader');
+    if (loader) {
+      loader.style.opacity = '0';
+      setTimeout(() => { loader.style.display = 'none'; }, 500);
+    }
+  }, 500);
+  
+} catch (e) {
+  console.error("Critical Render Error:", e);
+  document.body.innerHTML += `<div style="color:red; padding:20px;">CRITICAL APP ERROR: ${e}</div>`;
+}
