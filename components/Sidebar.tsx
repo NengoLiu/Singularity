@@ -33,15 +33,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentView, onChang
     <>
       {/* Backdrop */}
       <div 
-        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
 
-      {/* Sidebar Panel - Light Theme */}
-      <div className={`fixed top-0 left-0 bottom-0 w-64 bg-white/90 backdrop-blur-xl border-r border-white/50 shadow-2xl z-50 transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-white to-slate-50">
-          <h2 className="text-xl font-bold font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-sci-blue to-sci-purple">菜单</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-sci-blue transition-colors">
+      {/* Sidebar Panel - Dark Theme */}
+      <div className={`fixed top-0 left-0 bottom-0 w-64 bg-slate-900/95 backdrop-blur-2xl border-r border-slate-700/50 shadow-2xl z-50 transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+          <h2 className="text-xl font-bold font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-sci-cyan to-sci-purple neon-text">
+            MENU
+          </h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
         </div>
@@ -57,14 +59,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentView, onChang
                   }}
                   className={`w-full px-4 py-3 flex items-center space-x-4 rounded-xl transition-all relative group ${
                       currentView === item.id 
-                      ? 'bg-blue-50 text-sci-blue shadow-sm' 
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                      ? 'bg-sci-blue/10 text-sci-blue border border-sci-blue/20 shadow-[0_0_15px_rgba(59,130,246,0.15)]' 
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
                     {currentView === item.id && (
-                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-sci-blue rounded-r-full" />
+                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-sci-blue rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                     )}
-                  <item.icon size={20} className={currentView === item.id ? 'text-sci-blue' : 'text-slate-400 group-hover:text-sci-purple transition-colors'} />
+                  <item.icon size={20} className={currentView === item.id ? 'text-sci-blue' : 'text-slate-500 group-hover:text-sci-purple transition-colors'} />
                   <span className="font-medium text-sm tracking-wide">{item.label}</span>
                 </button>
               </li>
@@ -72,10 +74,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, currentView, onChang
           </ul>
         </nav>
 
-        <div className="p-6 border-t border-slate-100 bg-slate-50/50">
+        <div className="p-6 border-t border-slate-800 bg-slate-950/30">
           <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-white border border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-slate-900 border border-red-900/30 text-red-500 hover:bg-red-950/30 hover:border-red-500/50 transition-all shadow-sm"
           >
             <LogOut size={18} />
             <span className="font-medium text-sm">断开连接</span>

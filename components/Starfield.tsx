@@ -12,8 +12,8 @@ const Starfield: React.FC = () => {
 
     let animationFrameId: number;
     let particles: { x: number; y: number; z: number; color: string }[] = [];
-    const numParticles = 150;
-    const colors = ['#2563eb', '#9333ea', '#06b6d4']; // Blue, Purple, Cyan
+    const numParticles = 200;
+    const colors = ['#06b6d4', '#3b82f6', '#ffffff']; // Cyan, Blue, White
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -34,10 +34,10 @@ const Starfield: React.FC = () => {
     };
 
     const draw = () => {
-      // Light background for the "Bright Sci-Fi" look
+      // Dark Deep Space Gradient
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#f8fafc');
-      gradient.addColorStop(1, '#eff6ff'); // Very subtle blue tint at bottom
+      gradient.addColorStop(0, '#020617'); // Slate 950
+      gradient.addColorStop(1, '#0f172a'); // Slate 900
       
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -45,23 +45,34 @@ const Starfield: React.FC = () => {
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
 
-      // Draw faint grid lines for "blueprint" feel
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)'; // Slate-400 very transparent
+      // Draw Sci-Fi Grid lines (Retro-future style)
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.08)'; // Cyan very transparent
       ctx.lineWidth = 1;
-      const gridSize = 100;
+      const gridSize = 60;
       
       // Moving grid effect
-      const time = Date.now() / 50;
+      const time = Date.now() / 40;
       const xOffset = time % gridSize;
       const yOffset = time % gridSize;
 
-      // Only draw a few lines or it gets messy
-      /* 
-      // Optional: Grid lines logic here if desired, keeping it clean for now 
-      */
+      // Vertical lines
+      for (let x = xOffset; x < canvas.width; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+      }
+      
+      // Horizontal lines (perspective-ish limit)
+      for (let y = yOffset; y < canvas.height; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+      }
 
       particles.forEach((p) => {
-        p.z -= 2; // Speed
+        p.z -= 1.5; // Speed
         if (p.z <= 0) {
           p.z = canvas.width;
           p.x = (Math.random() - 0.5) * canvas.width;
@@ -70,19 +81,24 @@ const Starfield: React.FC = () => {
 
         const x = (p.x / p.z) * 100 + cx;
         const y = (p.y / p.z) * 100 + cy;
-        const size = (1 - p.z / canvas.width) * 4;
-        const alpha = (1 - p.z / canvas.width) * 0.6; // Max opacity 0.6
+        const size = (1 - p.z / canvas.width) * 3;
+        const alpha = (1 - p.z / canvas.width); 
 
         ctx.fillStyle = p.color;
         ctx.globalAlpha = alpha;
         
         ctx.beginPath();
-        // Draw circles (particles)
+        // Draw circles (stars)
         ctx.arc(x, y, size > 0 ? size : 0, 0, Math.PI * 2);
         ctx.fill();
         
-        // Connect nearby particles with thin lines for "Neural" look
-        // (Optimization: only check a few)
+        // Glow effect
+        if (size > 2) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = p.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
       });
       ctx.globalAlpha = 1.0;
 

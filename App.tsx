@@ -3,6 +3,9 @@ import Starfield from './components/Starfield';
 import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
 import ManualAuto from './components/ManualAuto';
+import AdminPanel from './components/AdminPanel';
+import PathPlanning from './components/PathPlanning';
+import FaultManagement from './components/FaultManagement';
 import { AppScreen, DashboardView, RobotStatus } from './types';
 import { Menu, Battery, Wifi, Send, Settings, Terminal, ZapOff, Activity, Bot } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
@@ -122,18 +125,24 @@ const App: React.FC = () => {
       switch(view) {
           case DashboardView.MANUAL_SEMI_AUTO:
               return <ManualAuto />;
+          case DashboardView.ADMIN:
+              return <AdminPanel />;
+          case DashboardView.PATH_PLANNING:
+              return <PathPlanning />;
+          case DashboardView.FAULT_MANAGEMENT:
+              return <FaultManagement />;
           case DashboardView.AI_CHAT:
               return (
                 <div className="h-full flex flex-col max-w-4xl mx-auto w-full pb-4">
-                     <div className="bg-white/60 backdrop-blur-md rounded-3xl p-6 border border-white shadow-lg flex-1 flex flex-col overflow-hidden">
-                        <div className="flex-1 overflow-y-auto mb-4 space-y-6 pr-2">
+                     <div className="glass-panel rounded-3xl p-6 flex-1 flex flex-col overflow-hidden">
+                        <div className="flex-1 overflow-y-auto mb-4 space-y-6 pr-2 custom-scrollbar">
                             {chatHistory.map((msg, idx) => (
                                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`flex items-start max-w-[80%] gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${msg.role === 'user' ? 'bg-slate-200' : 'bg-gradient-to-br from-sci-blue to-sci-purple text-white'}`}>
+                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md ${msg.role === 'user' ? 'bg-slate-700 text-slate-300' : 'bg-gradient-to-br from-sci-blue to-sci-purple text-white'}`}>
                                             {msg.role === 'user' ? 'U' : <Bot size={16} />}
                                          </div>
-                                         <div className={`p-4 rounded-2xl text-sm shadow-sm ${msg.role === 'user' ? 'bg-white text-slate-700 border border-slate-100 rounded-tr-none' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'}`}>
+                                         <div className={`p-4 rounded-2xl text-sm shadow-sm ${msg.role === 'user' ? 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tr-none' : 'bg-slate-900/80 text-sci-cyan border border-sci-cyan/20 rounded-tl-none'}`}>
                                             {msg.text}
                                         </div>
                                     </div>
@@ -146,9 +155,9 @@ const App: React.FC = () => {
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
                                 placeholder="向奇点发送指令..."
-                                className="w-full bg-slate-50 border border-slate-200 rounded-full py-4 pl-6 pr-14 focus:outline-none focus:border-sci-blue focus:ring-2 focus:ring-blue-100 text-slate-700 shadow-inner"
+                                className="w-full bg-slate-950/50 border border-slate-700 rounded-full py-4 pl-6 pr-14 focus:outline-none focus:border-sci-blue focus:ring-1 focus:ring-sci-blue/50 text-slate-200 shadow-inner placeholder-slate-600"
                             />
-                            <button type="submit" disabled={isChatLoading} className="absolute right-2 top-2 p-2 bg-gradient-to-r from-sci-blue to-sci-purple rounded-full text-white shadow-md hover:shadow-lg transition-all">
+                            <button type="submit" disabled={isChatLoading} className="absolute right-2 top-2 p-2 bg-gradient-to-r from-sci-blue to-sci-purple rounded-full text-white shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:shadow-[0_0_15px_rgba(59,130,246,0.8)] transition-all">
                                 <Send size={18} />
                             </button>
                         </form>
@@ -157,38 +166,38 @@ const App: React.FC = () => {
               );
           default:
               return (
-                  <div className="h-full flex items-center justify-center text-slate-400 font-mono flex-col">
-                      <div className="w-32 h-32 rounded-full bg-white flex items-center justify-center shadow-lg mb-6">
-                        <Terminal size={48} className="text-sci-blue opacity-50" />
+                  <div className="h-full flex items-center justify-center text-slate-500 font-mono flex-col">
+                      <div className="w-32 h-32 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-6">
+                        <Terminal size={48} className="text-slate-700" />
                       </div>
-                      <p className="text-lg font-bold text-slate-600">模块: {view}</p>
-                      <p className="text-xs mt-2 bg-slate-200 px-3 py-1 rounded-full text-slate-500">访问受限</p>
+                      <p className="text-lg font-bold text-slate-400">模块: {view}</p>
+                      <p className="text-xs mt-2 bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-red-400">ACCESS_DENIED</p>
                   </div>
               );
       }
   };
 
   return (
-    <div className="relative w-full h-screen font-sans overflow-hidden text-slate-800">
+    <div className="relative w-full h-screen font-sans overflow-hidden text-slate-200">
       <Starfield />
 
       {screen === AppScreen.LOGIN ? (
         <LoginScreen onLogin={handleLogin} isLoading={isLoginLoading} />
       ) : (
         <div className="flex flex-col h-full relative">
-            {/* Header - Glass Light */}
-            <header className="h-16 px-6 border-b border-white/40 bg-white/70 backdrop-blur-xl flex items-center justify-between z-30 shadow-sm">
-                <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
-                    <Menu className="text-sci-blue" />
+            {/* Header - Glass Dark */}
+            <header className="h-16 px-6 border-b border-white/10 bg-slate-900/70 backdrop-blur-xl flex items-center justify-between z-30 shadow-lg">
+                <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors">
+                    <Menu className="text-sci-cyan" />
                 </button>
                 
                 <div className="flex items-center space-x-6">
-                     <span className={`font-mono text-xs font-bold tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full ${isDemoMode ? 'bg-orange-100 text-orange-500' : 'bg-blue-50 text-sci-blue'}`}>
+                     <span className={`font-mono text-xs font-bold tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full border ${isDemoMode ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' : 'bg-sci-blue/10 border-sci-blue/30 text-sci-blue'}`}>
                         {isDemoMode ? <ZapOff size={14} /> : <Wifi size={14} />}
-                        {isDemoMode ? '离线模式' : `在线: ${connectionUrl.split('://')[1]}`}
+                        {isDemoMode ? 'OFFLINE_SIM' : `LINK: ${connectionUrl.split('://')[1]}`}
                     </span>
-                    <div className="flex items-center space-x-2 text-slate-500">
-                        <Battery size={18} className={robotStatus.battery < 20 ? 'text-red-500' : 'text-emerald-500'} />
+                    <div className="flex items-center space-x-2 text-slate-400">
+                        <Battery size={18} className={robotStatus.battery < 20 ? 'text-red-500' : 'text-emerald-400'} />
                         <span className="font-mono text-sm font-bold">{robotStatus.battery}%</span>
                     </div>
                 </div>

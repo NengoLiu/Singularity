@@ -3,22 +3,23 @@ import { ros2Connection } from '../libs/ros2Connection';
 import { 
     Power, RotateCcw, RotateCw, Activity, Droplets, Move, GitCommit, 
     ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-    PaintRoller, ArrowLeftRight, Ruler, Layers, Play, RefreshCw, Box, Axis3d
+    Play, RefreshCw, Axis3d, Ruler
 } from 'lucide-react';
+import Joystick from './Joystick';
 
-// --- ROBOT ARM VISUALIZER COMPONENT (CUSTOM KINEMATICS) ---
+// --- ROBOT ARM VISUALIZER COMPONENT (DARK THEME) ---
 const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled: boolean }> = ({ yaw, roll, height, enabled }) => {
     // Height visual scale factor: 0-8cm maps to 0-40px movement visually
     const heightOffset = -(height / 8) * 40; 
 
     return (
-        <div className={`w-full h-full bg-slate-50/50 relative overflow-hidden flex items-center justify-center transition-all duration-500 ${!enabled ? 'grayscale opacity-70' : ''}`}>
+        <div className={`w-full h-full bg-slate-900/50 relative overflow-hidden flex items-center justify-center transition-all duration-500 ${!enabled ? 'grayscale opacity-30' : ''}`}>
             
             {/* Info Overlay */}
             <div className="absolute top-2 left-2 z-10 flex flex-col gap-0.5 pointer-events-none">
-                <div className="flex items-center gap-1 text-sci-blue font-bold text-[10px] tracking-wider">
+                <div className="flex items-center gap-1 text-sci-cyan font-bold text-[10px] tracking-wider neon-text">
                     <Axis3d size={12} />
-                    <span>TWIN</span>
+                    <span>DIGITAL_TWIN</span>
                 </div>
             </div>
 
@@ -30,10 +31,10 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
                          transform: 'translateZ(-100px) rotateX(60deg) rotateZ(0deg) scale(0.8)' 
                      }}>
 
-                    {/* Ground Grid - Smaller for compact view */}
-                    <div className="absolute -top-[150px] -left-[150px] w-[300px] h-[300px] border border-slate-300/30 opacity-30" 
+                    {/* Ground Grid - Dark Neon */}
+                    <div className="absolute -top-[150px] -left-[150px] w-[300px] h-[300px] border border-sci-cyan/10 opacity-40" 
                          style={{ 
-                             backgroundImage: 'linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px)', 
+                             backgroundImage: 'linear-gradient(rgba(6,182,212,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.3) 1px, transparent 1px)', 
                              backgroundSize: '30px 30px',
                              transform: 'translateZ(-20px)' 
                          }} 
@@ -45,14 +46,14 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
                          style={{ transformStyle: 'preserve-3d', transform: `rotateZ(${yaw + 180}deg)` }}>
                         
                         {/* Base */}
-                        <div className="absolute -top-5 -left-5 w-10 h-10 rounded-full bg-slate-700 shadow-xl border-4 border-slate-600" 
+                        <div className="absolute -top-5 -left-5 w-10 h-10 rounded-full bg-slate-800 shadow-[0_0_15px_rgba(0,0,0,0.8)] border-2 border-slate-600" 
                              style={{ transform: 'translateZ(0px)' }}>
                         </div>
 
                         {/* 2. THE ARM */}
                         <div className="absolute top-0 left-[-8px] w-[16px] h-[140px] origin-top"
                              style={{ transformStyle: 'preserve-3d', transform: 'translateZ(15px)' }}>
-                            <div className="w-full h-full bg-gradient-to-r from-slate-200 to-slate-300 border border-slate-400 shadow-lg relative"></div>
+                            <div className="w-full h-full bg-gradient-to-r from-slate-700 to-slate-600 border border-slate-500 shadow-lg relative"></div>
                             
                             {/* 3. LIFT & ROLL GROUP */}
                             <div className="absolute bottom-0 left-1/2 w-0 h-0" style={{ transformStyle: 'preserve-3d' }}>
@@ -62,22 +63,23 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
                                 {/* 4. LIFT PISTON */}
                                 <div className="absolute w-0 h-0 transition-transform duration-300 ease-linear"
                                      style={{ transformStyle: 'preserve-3d', transform: `translateZ(${heightOffset}px)` }}>
-                                    <div className="absolute -left-[3px] -top-[8px] w-[6px] h-[30px] bg-slate-300 border border-slate-400 origin-top"
+                                    <div className="absolute -left-[3px] -top-[8px] w-[6px] h-[30px] bg-slate-400 border border-slate-500 origin-top"
                                          style={{ transform: 'rotateX(-90deg)' }}></div>
 
                                     {/* 5. ROLL GROUP */}
                                     <div className="absolute w-0 h-0"
                                          style={{ transformStyle: 'preserve-3d', transform: `translateZ(-40px) rotateZ(${roll}deg)` }}>
-                                        <div className="absolute -left-[40px] -top-[1px] w-[80px] h-[3px] bg-slate-400" style={{ transform: 'translateZ(-8px)' }}>
-                                            <div className="absolute left-0 top-0 w-[3px] h-[15px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
-                                            <div className="absolute right-0 top-0 w-[3px] h-[15px] bg-slate-400 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
+                                        <div className="absolute -left-[40px] -top-[1px] w-[80px] h-[3px] bg-slate-500" style={{ transform: 'translateZ(-8px)' }}>
+                                            <div className="absolute left-0 top-0 w-[3px] h-[15px] bg-slate-500 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
+                                            <div className="absolute right-0 top-0 w-[3px] h-[15px] bg-slate-500 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
                                         </div>
                                         {/* Roller */}
                                         <div className="absolute -left-[38px] -top-[6px] w-[76px] h-[12px] rounded-full"
                                              style={{ 
                                                  transform: 'translateZ(-20px)',
-                                                 background: 'repeating-linear-gradient(90deg, #e2e8f0, #cbd5e1 4px)',
-                                                 boxShadow: 'inset 0 0 5px rgba(0,0,0,0.2)'
+                                                 background: 'repeating-linear-gradient(90deg, #475569, #334155 4px)',
+                                                 boxShadow: 'inset 0 0 5px rgba(0,0,0,0.5)',
+                                                 border: '1px solid #64748b'
                                              }}></div>
                                     </div>
                                 </div>
@@ -291,12 +293,12 @@ const ManualAuto: React.FC = () => {
       
       {/* --- Compact Tab Switcher --- */}
       <div className="flex justify-center mb-1 shrink-0">
-          <div className="bg-white/80 p-1 rounded-full border border-white shadow-sm flex gap-1 backdrop-blur-sm">
+          <div className="bg-slate-900/80 p-1 rounded-full border border-slate-700 shadow-md flex gap-1 backdrop-blur-sm">
             <button
               onClick={() => handleTabChange('MANUAL')}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 activeTab === 'MANUAL' 
-                  ? 'bg-sci-blue text-white shadow-sm' 
+                  ? 'bg-sci-blue text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]' 
                   : 'text-slate-500 hover:text-sci-blue'
               }`}
             >
@@ -306,7 +308,7 @@ const ManualAuto: React.FC = () => {
               onClick={() => handleTabChange('SEMI')}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 activeTab === 'SEMI' 
-                  ? 'bg-sci-purple text-white shadow-sm' 
+                  ? 'bg-sci-purple text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]' 
                   : 'text-slate-500 hover:text-sci-purple'
               }`}
             >
@@ -321,16 +323,16 @@ const ManualAuto: React.FC = () => {
             
             {/* 1. TOP LEFT: Device Enable (Compact) */}
             <div className="glass-panel rounded-2xl p-3 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-2 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-2 mb-2 text-sci-cyan text-[10px] font-bold uppercase tracking-wider neon-text">
                     <Power size={12} /> 系统使能
                 </div>
                 <div className="flex gap-2">
                     <button 
                         onClick={toggleChassis}
-                        className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all ${
+                        className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all border ${
                             chassisEnabled 
-                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
-                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                            : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'
                         }`}
                     >
                         <Move size={16} />
@@ -338,10 +340,10 @@ const ManualAuto: React.FC = () => {
                     </button>
                     <button 
                             onClick={toggleArm}
-                            className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all ${
+                            className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all border ${
                                 armEnabled 
-                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
-                                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                                : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'
                             }`}
                     >
                         <GitCommit size={16} />
@@ -353,12 +355,12 @@ const ManualAuto: React.FC = () => {
             {/* 2. TOP RIGHT: Pump Control (Compact) */}
             <div className="glass-panel rounded-2xl p-3 flex flex-col justify-center">
                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-sci-cyan text-[10px] font-bold uppercase tracking-wider neon-text">
                         <Droplets size={12} /> 水泵控制
                     </div>
                     <button 
                              onClick={togglePump}
-                             className={`w-10 h-5 rounded-full transition-all relative shadow-inner ${pumpOn ? 'bg-sci-cyan' : 'bg-slate-200'}`}
+                             className={`w-10 h-5 rounded-full transition-all relative shadow-inner ${pumpOn ? 'bg-sci-cyan shadow-[0_0_10px_rgba(6,182,212,0.6)]' : 'bg-slate-700'}`}
                         >
                             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${pumpOn ? 'left-5.5' : 'left-0.5'}`} />
                     </button>
@@ -366,57 +368,57 @@ const ManualAuto: React.FC = () => {
                 <div className="flex gap-3 items-center">
                     <div className="flex-1 space-y-1">
                         <div className="flex justify-between text-[10px] text-slate-400 font-bold">
-                            <span>速度</span> <span>{pumpSpeed}</span>
+                            <span>速度</span> <span className="text-sci-cyan">{pumpSpeed}</span>
                         </div>
                         <input type="range" min="0" max="200" value={pumpSpeed}
                             onChange={(e) => handlePumpSliderChange('speed', parseInt(e.target.value))}
-                            className="w-full accent-sci-cyan h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            className="w-full accent-sci-cyan h-1.5 bg-slate-700 rounded-lg appearance-none" />
                     </div>
                     <div className="flex-1 space-y-1">
                         <div className="flex justify-between text-[10px] text-slate-400 font-bold">
-                            <span>容量</span> <span>{pumpFluid}</span>
+                            <span>容量</span> <span className="text-sci-cyan">{pumpFluid}</span>
                         </div>
                         <input type="range" min="0" max="12" value={pumpFluid}
                             onChange={(e) => handlePumpSliderChange('fluid', parseInt(e.target.value))}
-                            className="w-full accent-sci-cyan h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            className="w-full accent-sci-cyan h-1.5 bg-slate-700 rounded-lg appearance-none" />
                     </div>
                 </div>
             </div>
 
             {/* 3. BOTTOM LEFT: Chassis Drive (Maximised Control Area) */}
             <div className={`glass-panel rounded-2xl p-2 relative flex flex-col items-center justify-center transition-opacity ${!chassisEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                 <div className="absolute top-2 left-3 text-slate-400 text-[10px] font-bold">DRIVE</div>
+                 <div className="absolute top-2 left-3 text-slate-500 text-[10px] font-bold">DRIVE_SYSTEM</div>
                  
                  <div className="flex items-center gap-6">
                     {/* Rotation Left */}
                     <button 
-                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation > 0 ? 'bg-sci-blue text-white border-transparent' : 'bg-white text-slate-400 border-slate-200'}`}
+                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation > 0 ? 'bg-sci-blue text-white border-sci-blue shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
                         onMouseDown={() => setZRotation(1)} onMouseUp={() => setZRotation(0)} onMouseLeave={() => setZRotation(0)}
                         onTouchStart={(e) => { e.preventDefault(); setZRotation(1); }} onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
                     >
                         <RotateCcw size={20} />
                     </button>
 
-                    {/* D-PAD */}
+                    {/* D-PAD - Dark Style */}
                     <div className="w-32 h-32 relative">
-                         <div className="absolute inset-0 bg-slate-100/50 rounded-full border border-slate-200"></div>
+                         <div className="absolute inset-0 bg-slate-800/30 rounded-full border border-slate-700/50"></div>
                          {/* Up */}
-                         <button className={`absolute top-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-t-lg flex items-start justify-center pt-1 transition-colors ${movementState.up ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                         <button className={`absolute top-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-t-lg flex items-start justify-center pt-1 transition-colors ${movementState.up ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-b-0'}`}
                             onMouseDown={() => handleDirectionStart('up')} onMouseUp={() => handleDirectionEnd('up')} onMouseLeave={() => handleDirectionEnd('up')}
                             onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('up'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('up'); }}
                          ><ChevronUp size={24} /></button>
                          {/* Down */}
-                         <button className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-b-lg flex items-end justify-center pb-1 transition-colors ${movementState.down ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                         <button className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-b-lg flex items-end justify-center pb-1 transition-colors ${movementState.down ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-t-0'}`}
                             onMouseDown={() => handleDirectionStart('down')} onMouseUp={() => handleDirectionEnd('down')} onMouseLeave={() => handleDirectionEnd('down')}
                             onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('down'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('down'); }}
                          ><ChevronDown size={24} /></button>
                          {/* Left */}
-                         <button className={`absolute left-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-l-lg flex items-center justify-start pl-1 transition-colors ${movementState.left ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                         <button className={`absolute left-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-l-lg flex items-center justify-start pl-1 transition-colors ${movementState.left ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-r-0'}`}
                             onMouseDown={() => handleDirectionStart('left')} onMouseUp={() => handleDirectionEnd('left')} onMouseLeave={() => handleDirectionEnd('left')}
                             onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('left'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('left'); }}
                          ><ChevronLeft size={24} /></button>
                          {/* Right */}
-                         <button className={`absolute right-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-r-lg flex items-center justify-end pr-1 transition-colors ${movementState.right ? 'bg-sci-blue text-white' : 'bg-white text-sci-blue hover:bg-blue-50'}`}
+                         <button className={`absolute right-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-r-lg flex items-center justify-end pr-1 transition-colors ${movementState.right ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-l-0'}`}
                             onMouseDown={() => handleDirectionStart('right')} onMouseUp={() => handleDirectionEnd('right')} onMouseLeave={() => handleDirectionEnd('right')}
                             onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('right'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('right'); }}
                          ><ChevronRight size={24} /></button>
@@ -424,7 +426,7 @@ const ManualAuto: React.FC = () => {
 
                     {/* Rotation Right */}
                     <button 
-                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation < 0 ? 'bg-sci-blue text-white border-transparent' : 'bg-white text-slate-400 border-slate-200'}`}
+                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation < 0 ? 'bg-sci-blue text-white border-sci-blue shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
                         onMouseDown={() => setZRotation(-1)} onMouseUp={() => setZRotation(0)} onMouseLeave={() => setZRotation(0)}
                         onTouchStart={(e) => { e.preventDefault(); setZRotation(-1); }} onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
                     >
@@ -434,10 +436,10 @@ const ManualAuto: React.FC = () => {
 
                  {/* Speed Slider */}
                  <div className="absolute bottom-3 left-6 right-6 flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-slate-400 w-8">SPD</span>
+                    <span className="text-[10px] font-bold text-slate-500 w-8">SPD</span>
                     <input type="range" min="0" max="1000" step="50" value={chassisSpeedSetting}
                         onChange={(e) => setChassisSpeedSetting(parseInt(e.target.value))}
-                        className="flex-1 accent-sci-blue h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                        className="flex-1 accent-sci-blue h-1.5 bg-slate-700 rounded-lg appearance-none" />
                     <span className="text-[10px] font-bold text-sci-blue w-8 text-right">{chassisSpeedSetting}</span>
                  </div>
             </div>
@@ -448,22 +450,22 @@ const ManualAuto: React.FC = () => {
                     <RobotArmViz yaw={armYaw} roll={armRoll} height={armHeight} enabled={armEnabled} />
                  </div>
                  
-                 {/* Floating Overlay Controls */}
-                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/80 backdrop-blur-md border-t border-white/50 z-10 flex flex-col gap-2">
-                    <div className="flex gap-2 text-[10px] font-bold text-slate-500 mb-1">
+                 {/* Floating Overlay Controls - Dark Glass */}
+                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-slate-900/80 backdrop-blur-md border-t border-slate-700 z-10 flex flex-col gap-2">
+                    <div className="flex gap-2 text-[10px] font-bold text-slate-400 mb-1">
                         <span className="flex-1 text-center">YAW ({armYaw}°)</span>
                         <span className="flex-1 text-center">ROLL ({armRoll}°)</span>
                         <span className="flex-1 text-center">LIFT ({armHeight}cm)</span>
                     </div>
                     <div className="flex gap-2">
                          <input type="range" min="-90" max="90" value={armYaw} onChange={(e) => handleArmChange('yaw', parseInt(e.target.value))}
-                            className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
                          <input type="range" min="-180" max="180" value={armRoll} onChange={(e) => handleArmChange('roll', parseInt(e.target.value))}
-                            className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
                          <input type="range" min="0" max="8" value={armHeight} onChange={(e) => handleArmChange('height', parseInt(e.target.value))}
-                            className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
+                            className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
                     </div>
-                    <button onClick={resetArm} className="absolute top-[-30px] right-2 bg-white/90 p-1.5 rounded-lg shadow-sm text-xs font-bold text-sci-purple border border-purple-100">
+                    <button onClick={resetArm} className="absolute top-[-30px] right-2 bg-slate-800/90 p-1.5 rounded-lg shadow-sm text-xs font-bold text-sci-purple border border-sci-purple/30 hover:bg-slate-700">
                         RESET
                     </button>
                  </div>
@@ -476,23 +478,23 @@ const ManualAuto: React.FC = () => {
             
             {/* Col 1: Config (Compact) */}
             <div className="col-span-3 glass-panel rounded-2xl p-3 flex flex-col gap-4">
-                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                 <div className="text-sci-purple text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 neon-text">
                     <Activity size={12} /> 模式配置
                 </div>
                 
                 <div className="flex flex-col gap-2 flex-1">
                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-slate-400 font-bold">工艺</span>
+                        <span className="text-[10px] text-slate-500 font-bold">工艺</span>
                         <div className="flex gap-1">
-                            <button onClick={() => setCoatingType(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${coatingType === 0 ? 'bg-sci-purple text-white' : 'bg-slate-100 text-slate-400'}`}>刮涂</button>
-                            <button onClick={() => setCoatingType(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${coatingType === 1 ? 'bg-sci-purple text-white' : 'bg-slate-100 text-slate-400'}`}>辊涂</button>
+                            <button onClick={() => setCoatingType(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${coatingType === 0 ? 'bg-sci-purple/20 border-sci-purple text-sci-purple' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>刮涂</button>
+                            <button onClick={() => setCoatingType(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${coatingType === 1 ? 'bg-sci-purple/20 border-sci-purple text-sci-purple' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>辊涂</button>
                         </div>
                      </div>
                      <div className="flex flex-col gap-1 mt-2">
-                        <span className="text-[10px] text-slate-400 font-bold">方向</span>
+                        <span className="text-[10px] text-slate-500 font-bold">方向</span>
                         <div className="flex gap-1">
-                            <button onClick={() => setDirection(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${direction === 0 ? 'bg-sci-blue text-white' : 'bg-slate-100 text-slate-400'}`}>向左</button>
-                            <button onClick={() => setDirection(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${direction === 1 ? 'bg-sci-blue text-white' : 'bg-slate-100 text-slate-400'}`}>向右</button>
+                            <button onClick={() => setDirection(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${direction === 0 ? 'bg-sci-blue/20 border-sci-blue text-sci-blue' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>向左</button>
+                            <button onClick={() => setDirection(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${direction === 1 ? 'bg-sci-blue/20 border-sci-blue text-sci-blue' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>向右</button>
                         </div>
                      </div>
                 </div>
@@ -500,44 +502,44 @@ const ManualAuto: React.FC = () => {
 
             {/* Col 2: Params (Sliders) */}
             <div className="col-span-5 glass-panel rounded-2xl p-3 flex flex-col justify-center gap-4">
-                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
+                 <div className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
                     <Ruler size={12} /> 施工参数
                 </div>
                 <div className="space-y-4">
                     {/* Length */}
                     <div className="space-y-1">
                         <div className="flex justify-between text-[10px] font-bold">
-                             <span className="text-slate-400">长度 (m)</span>
+                             <span className="text-slate-500">长度 (m)</span>
                              <span className="text-sci-blue">{paramLength}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => updateFloatParam(setParamLength, paramLength, -0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">-</button>
-                            <input type="range" min="0" max="40" step="0.5" value={paramLength} onChange={(e) => setParamLength(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-200 rounded-lg appearance-none" />
-                            <button onClick={() => updateFloatParam(setParamLength, paramLength, 0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">+</button>
+                            <button onClick={() => updateFloatParam(setParamLength, paramLength, -0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">-</button>
+                            <input type="range" min="0" max="40" step="0.5" value={paramLength} onChange={(e) => setParamLength(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-700 rounded-lg appearance-none" />
+                            <button onClick={() => updateFloatParam(setParamLength, paramLength, 0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">+</button>
                         </div>
                     </div>
                     {/* Width */}
                     <div className="space-y-1">
                         <div className="flex justify-between text-[10px] font-bold">
-                             <span className="text-slate-400">宽度 (m)</span>
+                             <span className="text-slate-500">宽度 (m)</span>
                              <span className="text-sci-blue">{paramWidth}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, -0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">-</button>
-                            <input type="range" min="0" max="2.4" step="0.1" value={paramWidth} onChange={(e) => setParamWidth(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-200 rounded-lg appearance-none" />
-                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, 0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">+</button>
+                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, -0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">-</button>
+                            <input type="range" min="0" max="2.4" step="0.1" value={paramWidth} onChange={(e) => setParamWidth(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-700 rounded-lg appearance-none" />
+                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, 0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">+</button>
                         </div>
                     </div>
                      {/* Thickness */}
                     <div className="space-y-1">
                         <div className="flex justify-between text-[10px] font-bold">
-                             <span className="text-slate-400">厚度 (mm)</span>
+                             <span className="text-slate-500">厚度 (mm)</span>
                              <span className="text-sci-purple">{paramThickness}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, -0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">-</button>
-                            <input type="range" min="0" max="20" step="0.5" value={paramThickness} onChange={(e) => setParamThickness(parseFloat(e.target.value))} className="flex-1 accent-sci-purple h-1.5 bg-slate-200 rounded-lg appearance-none" />
-                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, 0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-100 text-slate-500 font-bold">+</button>
+                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, -0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">-</button>
+                            <input type="range" min="0" max="20" step="0.5" value={paramThickness} onChange={(e) => setParamThickness(parseFloat(e.target.value))} className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
+                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, 0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">+</button>
                         </div>
                     </div>
                 </div>
@@ -551,7 +553,7 @@ const ManualAuto: React.FC = () => {
 
                 <div className="flex-1 flex flex-col justify-center items-center">
                     {semiAutoAck && (
-                        <div className="absolute top-10 inset-x-2 bg-slate-800/90 text-white text-[10px] py-1 px-2 rounded text-center animate-pulse z-20">
+                        <div className="absolute top-10 inset-x-2 bg-slate-800/90 text-white text-[10px] py-1 px-2 rounded text-center animate-pulse z-20 border border-sci-blue/50">
                             {semiAutoAck}
                         </div>
                     )}
@@ -562,8 +564,8 @@ const ManualAuto: React.FC = () => {
                             disabled={!isConfigValid}
                             className={`w-full h-full max-h-[160px] rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${
                                 isConfigValid 
-                                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg active:scale-95' 
-                                : 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200'
+                                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95' 
+                                : 'bg-slate-800/50 text-slate-600 cursor-not-allowed border border-slate-700'
                             }`}
                         >
                             <Play size={32} fill="currentColor" />
@@ -572,7 +574,7 @@ const ManualAuto: React.FC = () => {
                     ) : (
                         <button
                             onClick={handleChangeCartridge}
-                            className="w-full h-full max-h-[160px] rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg active:scale-95 animate-pulse"
+                            className="w-full h-full max-h-[160px] rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all bg-gradient-to-br from-red-500 to-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.5)] active:scale-95 animate-pulse"
                         >
                             <RefreshCw size={32} className="animate-spin-slow" />
                             <span>紧急停止 / 换料</span>
