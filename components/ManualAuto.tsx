@@ -269,10 +269,16 @@ const ManualAuto: React.FC = () => {
             const scale = chassisSpeedSetting / 1000.0; 
             let x_speed = 0;
             let y_speed = 0;
-            if (up) x_speed += scale;      
-            if (down) x_speed -= scale;    
-            if (left) y_speed += scale;    
-            if (right) y_speed -= scale;   
+
+            // Mapping per request:
+            // Front/Back (Up/Down) -> y_speed
+            // Left/Right -> x_speed
+            
+            if (up) y_speed += scale;      
+            if (down) y_speed -= scale;    
+            if (right) x_speed += scale;   
+            if (left) x_speed -= scale;    
+            
             const z_speed = zRotation * 30; 
             ros2Connection.publishChassisControl({ x_speed, y_speed, z_speed });
         }
