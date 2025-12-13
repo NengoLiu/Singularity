@@ -3,7 +3,8 @@ import { ros2Connection } from '../libs/ros2Connection';
 import { 
     Power, RotateCcw, RotateCw, Activity, Droplets, Move, GitCommit, 
     ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-    Play, RefreshCw, Axis3d, Ruler
+    Play, RefreshCw, Axis3d, Ruler,
+    AlertCircle, CheckCircle2, Info
 } from 'lucide-react';
 import Joystick from './Joystick';
 
@@ -92,9 +93,18 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
     );
 };
 
+// --- TOAST TYPES ---
+interface ToastMsg {
+    title: string;
+    desc: string;
+    type: 'success' | 'error' | 'info';
+}
 
 const ManualAuto: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'MANUAL' | 'SEMI'>('MANUAL');
+  
+  // Toast State
+  const [toast, setToast] = useState<ToastMsg | null>(null);
   
   // --- MANUAL MODE STATES ---
   const [chassisEnabled, setChassisEnabled] = useState(false);
@@ -123,53 +133,116 @@ const ManualAuto: React.FC = () => {
   const [paramThickness, setParamThickness] = useState(0); // 0-20mm
   
   const [isConstructing, setIsConstructing] = useState(false);
-  const [semiAutoAck, setSemiAutoAck] = useState<string>('');
+
+  // Helper: Show Toast
+  const showToast = (title: string, desc: string, type: 'success' | 'error' | 'info' = 'info') => {
+      setToast({ title, desc, type });
+      // Auto dismiss after 3s
+      setTimeout(() => setToast(null), 3000);
+  };
 
   // Switch Mode logic
   const handleTabChange = async (tab: 'MANUAL' | 'SEMI') => {
     setActiveTab(tab);
+    
+    // EXPLICIT REQUIREMENT: Always send the mode command
+    const modeCmd = tab === 'MANUAL' ? 1 : 2;
+    console.log(`[MODE_SWITCH] Enforcing mode: ${tab} (CMD: ${modeCmd})`);
+
     try {
-        await ros2Connection.sendMachineModeRequest(tab === 'MANUAL' ? 1 : 2);
+        await ros2Connection.sendMachineModeRequest(modeCmd);
+        
+        if (tab === 'SEMI') {
+             showToast('模式切换', '已切换至半自动施工模式', 'success');
+        } else {
+             showToast('模式切换', '已切换至手动控制模式', 'success');
+        }
     } catch (e) {
         console.error("Failed to switch mode", e);
+        showToast('模式切换失败', '无法连接到主控或指令超时', 'error');
     }
   };
 
   // --- MANUAL HANDLERS ---
   const toggleChassis = async () => {
+    if (!ros2Connection.isConnected()) {
+        showToast("通信错误", "未连接到机器人核心", 'error');
+        return;
+    }
+
     try {
         const cmd = chassisEnabled ? 0 : 1;
         const ack = await ros2Connection.sendChassisEnableRequest(cmd);
-        if (ack === 1) setChassisEnabled(!chassisEnabled);
+        
+        if (ack === 1) {
+            setChassisEnabled(!chassisEnabled);
+            showToast(
+                !chassisEnabled ? "底盘已使能" : "底盘已关闭",
+                !chassisEnabled ? "电机动力系统已连接" : "电机动力已切断",
+                !chassisEnabled ? 'success' : 'info'
+            );
+        } else {
+            showToast("操作失败", "底盘控制器拒绝了指令", 'error');
+        }
     } catch (e) {
         console.error("Chassis enable failed", e);
+        showToast("通信异常", "发送使能请求失败", 'error');
     }
   };
 
   const toggleArm = async () => {
+    if (!ros2Connection.isConnected()) {
+        showToast("通信错误", "未连接到机器人核心", 'error');
+        return;
+    }
+
     try {
         const cmd = armEnabled ? 0 : 1;
         const ack = await ros2Connection.sendArmEnableRequest(cmd);
-        if (ack === 1) setArmEnabled(!armEnabled);
+        
+        if (ack === 1) {
+            setArmEnabled(!armEnabled);
+            showToast(
+                !armEnabled ? "机械臂已使能" : "机械臂已关闭",
+                !armEnabled ? "液压/伺服系统准备就绪" : "系统已锁定",
+                !armEnabled ? 'success' : 'info'
+            );
+        } else {
+            showToast("操作失败", "机械臂控制器拒绝了指令", 'error');
+        }
     } catch (e) {
         console.error("Arm enable failed", e);
+        showToast("通信异常", "发送机械臂请求失败", 'error');
     }
   };
 
   const togglePump = () => {
+    if (!ros2Connection.isConnected()) {
+        showToast("通信错误", "未连接到机器人核心", 'error');
+        return;
+    }
+
     const newState = !pumpOn;
     setPumpOn(newState);
+    
     ros2Connection.publishPumpControl({
         pump_switch: newState ? 1 : 0,
         pump_speed: pumpSpeed,
         pump_flud: pumpFluid
     });
+
+    showToast(
+        newState ? "水泵已启动" : "水泵已停止",
+        `当前状态: ${newState ? "运行中" : "待机"}`,
+        newState ? 'success' : 'info'
+    );
   };
 
   const handlePumpSliderChange = (type: 'speed' | 'fluid', val: number) => {
     if (type === 'speed') setPumpSpeed(val);
     else setPumpFluid(val);
     
+    // Continuous updates do not need toasts
     ros2Connection.publishPumpControl({
         pump_switch: pumpOn ? 1 : 0,
         pump_speed: type === 'speed' ? val : pumpSpeed,
@@ -204,6 +277,7 @@ const ManualAuto: React.FC = () => {
           updown_angle: 0,
           arm_reset: 1
       });
+      showToast("机械臂复位", "位置已重置为零点", 'info');
   };
 
   const handleDirectionStart = (dir: 'up' | 'down' | 'left' | 'right') => {
@@ -228,28 +302,31 @@ const ManualAuto: React.FC = () => {
   };
 
   const handleStartConstruction = async () => {
+      if (!ros2Connection.isConnected()) {
+          showToast("错误", "未连接设备", 'error');
+          return;
+      }
       try {
           const ack = await ros2Connection.sendSemiModeRequest(coatingType, direction, paramWidth, paramLength, paramThickness);
           if (ack === 1) {
               setIsConstructing(true);
-              setSemiAutoAck('指令已下发: 开始施工');
-              setTimeout(() => setSemiAutoAck(''), 3000);
+              showToast("指令已下发", "开始半自动施工流程", 'success');
           } else {
-              setSemiAutoAck('错误: 机器未响应');
+              showToast("启动失败", "机器未响应或拒绝指令", 'error');
           }
       } catch (e) {
           console.error("Start construction failed", e);
-          setSemiAutoAck('通信错误');
+          showToast("通信错误", "发送施工请求失败", 'error');
       }
   };
 
   const handleChangeCartridge = async () => {
+      if (!ros2Connection.isConnected()) return;
       try {
           const ack = await ros2Connection.sendStopRequest(2);
           if (ack === 1) {
               setIsConstructing(false);
-              setSemiAutoAck('指令已下发: 更换料筒/停止');
-              setTimeout(() => setSemiAutoAck(''), 3000);
+              showToast("暂停/换料", "机器已接收暂停指令", 'info');
           }
       } catch (e) {
           console.error("Stop/Change Cartridge failed", e);
@@ -295,8 +372,25 @@ const ManualAuto: React.FC = () => {
 
 
   return (
-    <div className="flex flex-col h-full w-full select-none" onMouseUp={handleGlobalEnd} onTouchEnd={handleGlobalEnd}>
+    <div className="flex flex-col h-full w-full select-none relative" onMouseUp={handleGlobalEnd} onTouchEnd={handleGlobalEnd}>
       
+      {/* --- Global Toast Overlay --- */}
+      {toast && (
+        <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl border backdrop-blur-md shadow-2xl transition-all animate-in fade-in slide-in-from-top-4 flex items-center gap-3 ${
+            toast.type === 'error' ? 'bg-red-950/90 border-red-500 text-red-100' :
+            toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500 text-emerald-100' :
+            'bg-slate-900/90 border-sci-blue text-slate-100'
+        }`}>
+            {toast.type === 'error' && <AlertCircle size={20} />}
+            {toast.type === 'success' && <CheckCircle2 size={20} />}
+            {toast.type === 'info' && <Info size={20} />}
+            <div>
+                <div className="font-bold text-sm">{toast.title}</div>
+                <div className="text-xs opacity-80">{toast.desc}</div>
+            </div>
+        </div>
+      )}
+
       {/* --- Compact Tab Switcher --- */}
       <div className="flex justify-center mb-1 shrink-0">
           <div className="bg-slate-900/80 p-1 rounded-full border border-slate-700 shadow-md flex gap-1 backdrop-blur-sm">
@@ -558,12 +652,6 @@ const ManualAuto: React.FC = () => {
                 </div>
 
                 <div className="flex-1 flex flex-col justify-center items-center">
-                    {semiAutoAck && (
-                        <div className="absolute top-10 inset-x-2 bg-slate-800/90 text-white text-[10px] py-1 px-2 rounded text-center animate-pulse z-20 border border-sci-blue/50">
-                            {semiAutoAck}
-                        </div>
-                    )}
-                    
                     {!isConstructing ? (
                          <button
                             onClick={handleStartConstruction}
