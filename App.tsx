@@ -37,7 +37,7 @@ const App: React.FC = () => {
       // 1. Clean IP Input
       let host = ip.trim();
       
-      // Remove any existing protocol prefixes to avoid duplication
+      // Remove any existing protocol prefixes (ws, wss, http, https)
       host = host.replace(/^(ws|wss|http|https):\/\//, '');
       
       // Default ROS Bridge port is 9090 if not specified
@@ -45,16 +45,15 @@ const App: React.FC = () => {
           host = `${host}:9090`;
       }
       
-      // STRICT REQUIREMENT: Force ws:// protocol for Android local network (usesCleartextTraffic=true)
-      // Do NOT use wss:// even if the web page is https (User understands this breaks web preview)
-      const wsUrl = `ws://${host}`;
+      // UPDATED: Using wss:// for secure communication
+      const wsUrl = `wss://${host}`;
       
-      console.log(`[SYSTEM] Initiating Neural Link to: ${wsUrl}`);
+      console.log(`[SYSTEM] Initiating Encrypted Link: ${wsUrl}`);
       
       setIsLoginLoading(true);
 
       try {
-        // 2. Establish WebSocket Connection
+        // 2. Establish Secure WebSocket Connection
         await ros2Connection.connect(wsUrl);
 
         // 3. Send Handshake / Power On Request
@@ -63,7 +62,7 @@ const App: React.FC = () => {
         
         if (ack === 1) {
             // Success: Proceed to Dashboard
-            console.log("[SYSTEM] Handshake Authorized.");
+            console.log("[SYSTEM] Secure Handshake Authorized.");
             setConnectionUrl(wsUrl);
             setRobotStatus(prev => ({ ...prev, isOnline: true }));
             setIsDemoMode(false);
@@ -72,26 +71,20 @@ const App: React.FC = () => {
         } else {
             // Failure: Robot refused connection
             console.warn("[SYSTEM] Handshake Refused (ACK != 1)");
-            alert("登录失败: 机器人拒绝了连接请求 (Establish ACK Failed)");
+            alert("登录失败: 机器人拒绝了加密链路连接 (Establish ACK Failed)");
             ros2Connection.disconnect();
         }
 
       } catch (error: any) {
         console.error("[SYSTEM] Connection Critical Error:", error);
         
-        // STRICT LOGIC: Do NOT fall back to Demo Mode. Show error and stay on login.
-        // User must fix network or IP to proceed.
+        // STRICT LOGIC: Do NOT fall back to Demo Mode.
         let errorMsg = "连接超时或被拒绝";
         if (error instanceof Error) {
             errorMsg = error.message;
         }
         
-        // Detailed error for debugging (Web Preview specific hint)
-        if (window.location.protocol === 'https:') {
-            errorMsg += "\n\n(注意: 当前 Web 预览环境为 HTTPS，浏览器安全策略可能会拦截 ws:// 请求。请在 Android 真机或 HTTP 环境下测试。)";
-        }
-        
-        alert(`连接失败: ${wsUrl}\n${errorMsg}`);
+        alert(`链路建立失败: ${wsUrl}\n原因: ${errorMsg}\n请检查服务器 SSL 证书及 9090 端口配置。`);
         ros2Connection.disconnect();
       } finally {
         setIsLoginLoading(false);
