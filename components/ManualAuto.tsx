@@ -1,87 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ros2Connection } from '../libs/ros2Connection';
-import { 
-    Power, RotateCcw, RotateCw, Activity, Droplets, Move, GitCommit, 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useROS2 } from '../libs/useROS2';
+import { safeLocalStorage } from '../libs/rosStore';
+import {
+    Power, RotateCcw, RotateCw, Activity, Droplets, Move, GitCommit,
     ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
     Play, RefreshCw, Axis3d, Ruler,
-    AlertCircle, CheckCircle2, Info
+    AlertCircle, CheckCircle2, Info, Navigation, Minus, Plus, 
+    Octagon, Rotate3d, CornerUpLeft, CornerUpRight, Layers
 } from 'lucide-react';
-import Joystick from './Joystick';
 
-// --- ROBOT ARM VISUALIZER COMPONENT (DARK THEME) ---
+const PARAMS_STORAGE_KEY = 'singularity_manual_params_v3';
+
+/**
+ * --- ROBOT ARM VISUALIZER (3D DIGITAL TWIN) ---
+ */
 const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled: boolean }> = ({ yaw, roll, height, enabled }) => {
-    // Height visual scale factor: 0-8cm maps to 0-40px movement visually
-    const heightOffset = -(height / 8) * 40; 
-
+    const heightOffset = -(height / 8) * 40;
     return (
-        <div className={`w-full h-full bg-slate-900/50 relative overflow-hidden flex items-center justify-center transition-all duration-500 ${!enabled ? 'grayscale opacity-30' : ''}`}>
-            
-            {/* Info Overlay */}
-            <div className="absolute top-2 left-2 z-10 flex flex-col gap-0.5 pointer-events-none">
-                <div className="flex items-center gap-1 text-sci-cyan font-bold text-[10px] tracking-wider neon-text">
-                    <Axis3d size={12} />
-                    <span>DIGITAL_TWIN</span>
+        <div className={`w-full h-full bg-slate-900/50 relative overflow-hidden flex items-center justify-center transition-all duration-700 ${!enabled ? 'grayscale opacity-20 scale-95 blur-[1px]' : 'animate-in fade-in'}`}>
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 pointer-events-none">
+                <div className="flex items-center gap-2 text-sci-cyan font-black text-[10px] tracking-widest neon-text">
+                    <Axis3d size={14} />
+                    <span>DIGITAL_TWIN_SIMULATION</span>
                 </div>
             </div>
-
-            {/* 3D Scene Container */}
-            <div className="relative w-full h-full perspective-container" style={{ perspective: '800px' }}>
-                <div className="absolute top-[60%] left-1/2 w-0 h-0" 
-                     style={{ 
-                         transformStyle: 'preserve-3d', 
-                         transform: 'translateZ(-100px) rotateX(60deg) rotateZ(0deg) scale(0.8)' 
-                     }}>
-
-                    {/* Ground Grid - Dark Neon */}
-                    <div className="absolute -top-[150px] -left-[150px] w-[300px] h-[300px] border border-sci-cyan/10 opacity-40" 
-                         style={{ 
-                             backgroundImage: 'linear-gradient(rgba(6,182,212,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.3) 1px, transparent 1px)', 
-                             backgroundSize: '30px 30px',
-                             transform: 'translateZ(-20px)' 
-                         }} 
-                    />
-
-                    {/* KINEMATIC CHAIN */}
-                    {/* 1. YAW GROUP */}
-                    <div className="w-0 h-0 relative transition-transform duration-300 ease-out" 
-                         style={{ transformStyle: 'preserve-3d', transform: `rotateZ(${yaw + 180}deg)` }}>
-                        
-                        {/* Base */}
-                        <div className="absolute -top-5 -left-5 w-10 h-10 rounded-full bg-slate-800 shadow-[0_0_15px_rgba(0,0,0,0.8)] border-2 border-slate-600" 
-                             style={{ transform: 'translateZ(0px)' }}>
-                        </div>
-
-                        {/* 2. THE ARM */}
-                        <div className="absolute top-0 left-[-8px] w-[16px] h-[140px] origin-top"
-                             style={{ transformStyle: 'preserve-3d', transform: 'translateZ(15px)' }}>
-                            <div className="w-full h-full bg-gradient-to-r from-slate-700 to-slate-600 border border-slate-500 shadow-lg relative"></div>
-                            
-                            {/* 3. LIFT & ROLL GROUP */}
+            <div className="relative w-full h-full perspective-container" style={{ perspective: '1000px' }}>
+                <div className="absolute top-[55%] left-1/2 w-0 h-0" style={{ transformStyle: 'preserve-3d', transform: 'translateZ(-100px) rotateX(65deg) rotateZ(0deg) scale(0.9)' }}>
+                    <div className="absolute -top-[200px] -left-[200px] w-[400px] h-[400px] border border-sci-cyan/10 opacity-30" style={{ backgroundImage: `linear-gradient(rgba(6,182,212,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.4) 1px, transparent 1px)`, backgroundSize: '40px 40px', transform: 'translateZ(-30px)', maskImage: 'radial-gradient(circle, white, transparent 75%)' }} />
+                    <div className="w-0 h-0 relative transition-transform duration-500 ease-out" style={{ transformStyle: 'preserve-3d', transform: `rotateZ(${yaw + 180}deg)` }}>
+                        <div className="absolute -top-7 -left-7 w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-600 shadow-2xl" />
+                        <div className="absolute top-0 left-[-10px] w-[20px] h-[150px] origin-top" style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}>
+                            <div className="w-full h-full bg-gradient-to-r from-slate-700 to-slate-700 border border-slate-500 relative" />
                             <div className="absolute bottom-0 left-1/2 w-0 h-0" style={{ transformStyle: 'preserve-3d' }}>
-                                <div className="absolute -left-[12px] -top-[8px] w-[24px] h-[24px] bg-slate-800 rounded-sm border border-slate-600"
-                                     style={{ transform: 'translateZ(8px)' }}></div>
-
-                                {/* 4. LIFT PISTON */}
-                                <div className="absolute w-0 h-0 transition-transform duration-300 ease-linear"
-                                     style={{ transformStyle: 'preserve-3d', transform: `translateZ(${heightOffset}px)` }}>
-                                    <div className="absolute -left-[3px] -top-[8px] w-[6px] h-[30px] bg-slate-400 border border-slate-500 origin-top"
-                                         style={{ transform: 'rotateX(-90deg)' }}></div>
-
-                                    {/* 5. ROLL GROUP */}
-                                    <div className="absolute w-0 h-0"
-                                         style={{ transformStyle: 'preserve-3d', transform: `translateZ(-40px) rotateZ(${roll}deg)` }}>
-                                        <div className="absolute -left-[40px] -top-[1px] w-[80px] h-[3px] bg-slate-500" style={{ transform: 'translateZ(-8px)' }}>
-                                            <div className="absolute left-0 top-0 w-[3px] h-[15px] bg-slate-500 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
-                                            <div className="absolute right-0 top-0 w-[3px] h-[15px] bg-slate-500 origin-top" style={{ transform: 'rotateX(90deg)' }}></div>
-                                        </div>
-                                        {/* Roller */}
-                                        <div className="absolute -left-[38px] -top-[6px] w-[76px] h-[12px] rounded-full"
-                                             style={{ 
-                                                 transform: 'translateZ(-20px)',
-                                                 background: 'repeating-linear-gradient(90deg, #475569, #334155 4px)',
-                                                 boxShadow: 'inset 0 0 5px rgba(0,0,0,0.5)',
-                                                 border: '1px solid #64748b'
-                                             }}></div>
+                                <div className="absolute w-0 h-0 transition-transform duration-500 ease-linear" style={{ transformStyle: 'preserve-3d', transform: `translateZ(${heightOffset}px)` }}>
+                                    <div className="absolute w-0 h-0" style={{ transformStyle: 'preserve-3d', transform: `translateZ(-50px) rotateZ(${roll}deg)` }}>
+                                        <div className="absolute -left-[52px] -top-[10px] w-[104px] h-[20px] rounded-full" style={{ transform: 'translateZ(-28px)', background: 'repeating-linear-gradient(90deg, #475569, #334155 8px, #475569 16px)', border: '1px solid #64748b' }} />
                                     </div>
                                 </div>
                             </div>
@@ -93,590 +46,360 @@ const RobotArmViz: React.FC<{ yaw: number; roll: number; height: number; enabled
     );
 };
 
-// --- TOAST TYPES ---
-interface ToastMsg {
-    title: string;
-    desc: string;
-    type: 'success' | 'error' | 'info';
-}
-
 const ManualAuto: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'MANUAL' | 'SEMI'>('MANUAL');
-  
-  // Toast State
-  const [toast, setToast] = useState<ToastMsg | null>(null);
-  
-  // --- MANUAL MODE STATES ---
-  const [chassisEnabled, setChassisEnabled] = useState(false);
-  const [armEnabled, setArmEnabled] = useState(false);
-  
+  const {
+    isConnected, sendMachineMode, sendChassisEnable, sendArmEnable, publishPumpControl,
+    publishChassisControl, publishArmControl, sendSemiMode, sendStop
+  } = useROS2();
+
+  const getSaved = useCallback((key: string, def: any) => {
+    try {
+      const saved = safeLocalStorage.getItem(PARAMS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed[key] !== undefined ? parsed[key] : def;
+      }
+    } catch(e) {}
+    return def;
+  }, []);
+
+  const [activeTab, setActiveTab] = useState<'MANUAL' | 'SEMI'>(() => getSaved('activeTab', 'MANUAL'));
+  const [chassisEnabled, setChassisEnabled] = useState(() => getSaved('chassisEnabled', false));
+  const [armEnabled, setArmEnabled] = useState(() => getSaved('armEnabled', false));
   const [pumpOn, setPumpOn] = useState(false);
-  const [pumpSpeed, setPumpSpeed] = useState(0);
-  const [pumpFluid, setPumpFluid] = useState(0);
+  const [pumpSpeed, setPumpSpeed] = useState(() => getSaved('pumpSpeed', [0]));
+  const [pumpFlud, setPumpFlud] = useState(() => getSaved('pumpFlud', [0]));
+  const [speed, setSpeed] = useState(() => getSaved('speed', 0.5));
+  const [activeDirection, setActiveDirection] = useState<string | null>(null);
+  const [yawAngle, setYawAngle] = useState(() => getSaved('yawAngle', [0]));
+  const [rollAngle, setRollAngle] = useState(() => getSaved('rollAngle', [0]));
+  const [updownAngle, setUpdownAngle] = useState(() => getSaved('updownAngle', [0]));
+  const [bladeRoller, setBladeRoller] = useState<"0" | "1">(() => getSaved('bladeRoller', "0"));
+  const [direction, setDirection] = useState<"0" | "1">(() => getSaved('direction', "0"));
+  const [width, setWidth] = useState<number>(() => getSaved('width', 1.6));
+  const [length, setLength] = useState<number>(() => getSaved('length', 10));
+  const [thickness, setThickness] = useState<number>(() => getSaved('thickness', 5));
+  const [isConfigured, setIsConfigured] = useState<boolean>(() => getSaved('isConfigured', false));
+  const [isStopped, setIsStopped] = useState<boolean>(() => getSaved('isStopped', false));
+  const [lastConfig, setLastConfig] = useState<any>(() => getSaved('lastConfig', null));
 
-  const [chassisSpeedSetting, setChassisSpeedSetting] = useState(500); 
-  const [zRotation, setZRotation] = useState(0);
+  useEffect(() => {
+    const snapshot = {
+        activeTab, pumpSpeed, pumpFlud, speed, yawAngle, rollAngle, updownAngle,
+        bladeRoller, direction, width, length, thickness, isConfigured, isStopped, lastConfig,
+        chassisEnabled, armEnabled
+    };
+    safeLocalStorage.setItem(PARAMS_STORAGE_KEY, JSON.stringify(snapshot));
+  }, [activeTab, pumpSpeed, pumpFlud, speed, yawAngle, rollAngle, updownAngle, bladeRoller, direction, width, length, thickness, isConfigured, isStopped, lastConfig, chassisEnabled, armEnabled]);
 
-  const [movementState, setMovementState] = useState({ up: false, down: false, left: false, right: false });
-  const movementRef = useRef({ up: false, down: false, left: false, right: false });
+  const adjustValue = useCallback((value: number, delta: number, min: number, max: number, setter: (v: number) => void) => {
+    const newValue = Math.min(Math.max(value + delta, min), max);
+    setter(parseFloat(newValue.toFixed(1)));
+  }, []);
 
-  const [armYaw, setArmYaw] = useState(0);
-  const [armRoll, setArmRoll] = useState(0);
-  const [armHeight, setArmHeight] = useState(0);
+  const sendChassisControl = useCallback((x: number, y: number, z: number) => {
+    publishChassisControl({ x_speed: x, y_speed: y, z_speed: z });
+  }, [publishChassisControl]);
 
-  // --- SEMI-AUTO MODE STATES ---
-  const [coatingType, setCoatingType] = useState<0 | 1>(0); // 0: 刮涂, 1: 辊涂
-  const [direction, setDirection] = useState<0 | 1>(0); // 0: 向左, 1: 向右
-  
-  const [paramLength, setParamLength] = useState(0); // 0-40m
-  const [paramWidth, setParamWidth] = useState(0);   // 0-2.4m
-  const [paramThickness, setParamThickness] = useState(0); // 0-20mm
-  
-  const [isConstructing, setIsConstructing] = useState(false);
-
-  // Helper: Show Toast
-  const showToast = (title: string, desc: string, type: 'success' | 'error' | 'info' = 'info') => {
-      setToast({ title, desc, type });
-      // Auto dismiss after 3s
-      setTimeout(() => setToast(null), 3000);
+  const handleDirStart = (dir: 'f' | 'b' | 'l' | 'r' | 'ccw' | 'cw') => {
+    if (!chassisEnabled) return;
+    setActiveDirection(dir);
+    const s = speed;
+    if (dir === 'f') sendChassisControl(s, 0, 0);
+    else if (dir === 'b') sendChassisControl(-s, 0, 0);
+    else if (dir === 'l') sendChassisControl(0, s, 0);
+    else if (dir === 'r') sendChassisControl(0, -s, 0);
+    else if (dir === 'ccw') sendChassisControl(0, 0, -s * 30);
+    else if (dir === 'cw') sendChassisControl(0, 0, s * 30);
   };
 
-  // Switch Mode logic
+  const handleDirEnd = () => {
+    if (activeDirection) {
+        setActiveDirection(null);
+        sendChassisControl(0, 0, 0);
+    }
+  };
+
   const handleTabChange = async (tab: 'MANUAL' | 'SEMI') => {
     setActiveTab(tab);
-    
-    // EXPLICIT REQUIREMENT: Always send the mode command
-    const modeCmd = tab === 'MANUAL' ? 1 : 2;
-    console.log(`[MODE_SWITCH] Enforcing mode: ${tab} (CMD: ${modeCmd})`);
-
-    try {
-        await ros2Connection.sendMachineModeRequest(modeCmd);
-        
-        if (tab === 'SEMI') {
-             showToast('模式切换', '已切换至半自动施工模式', 'success');
-        } else {
-             showToast('模式切换', '已切换至手动控制模式', 'success');
-        }
-    } catch (e) {
-        console.error("Failed to switch mode", e);
-        showToast('模式切换失败', '无法连接到主控或指令超时', 'error');
-    }
+    if (isConnected) await sendMachineMode(tab === 'MANUAL' ? 1 : 2);
   };
 
-  // --- MANUAL HANDLERS ---
-  const toggleChassis = async () => {
-    if (!ros2Connection.isConnected()) {
-        showToast("通信错误", "未连接到机器人核心", 'error');
-        return;
-    }
-
-    try {
-        const cmd = chassisEnabled ? 0 : 1;
-        const ack = await ros2Connection.sendChassisEnableRequest(cmd);
-        
-        if (ack === 1) {
-            setChassisEnabled(!chassisEnabled);
-            showToast(
-                !chassisEnabled ? "底盘已使能" : "底盘已关闭",
-                !chassisEnabled ? "电机动力系统已连接" : "电机动力已切断",
-                !chassisEnabled ? 'success' : 'info'
-            );
-        } else {
-            showToast("操作失败", "底盘控制器拒绝了指令", 'error');
-        }
-    } catch (e) {
-        console.error("Chassis enable failed", e);
-        showToast("通信异常", "发送使能请求失败", 'error');
-    }
+  const onChassisToggle = async () => {
+    const nextState = !chassisEnabled ? 1 : 0;
+    const ack = isConnected ? await sendChassisEnable(nextState) : 1;
+    if (ack === 1) setChassisEnabled(!chassisEnabled);
   };
 
-  const toggleArm = async () => {
-    if (!ros2Connection.isConnected()) {
-        showToast("通信错误", "未连接到机器人核心", 'error');
-        return;
-    }
-
-    try {
-        const cmd = armEnabled ? 0 : 1;
-        const ack = await ros2Connection.sendArmEnableRequest(cmd);
-        
-        if (ack === 1) {
-            setArmEnabled(!armEnabled);
-            showToast(
-                !armEnabled ? "机械臂已使能" : "机械臂已关闭",
-                !armEnabled ? "液压/伺服系统准备就绪" : "系统已锁定",
-                !armEnabled ? 'success' : 'info'
-            );
-        } else {
-            showToast("操作失败", "机械臂控制器拒绝了指令", 'error');
-        }
-    } catch (e) {
-        console.error("Arm enable failed", e);
-        showToast("通信异常", "发送机械臂请求失败", 'error');
-    }
+  const onArmToggle = async () => {
+    const nextState = !armEnabled ? 1 : 0;
+    const ack = isConnected ? await sendArmEnable(nextState) : 1;
+    if (ack === 1) setArmEnabled(!armEnabled);
   };
 
-  const togglePump = () => {
-    if (!ros2Connection.isConnected()) {
-        showToast("通信错误", "未连接到机器人核心", 'error');
-        return;
-    }
-
-    const newState = !pumpOn;
-    setPumpOn(newState);
-    
-    ros2Connection.publishPumpControl({
-        pump_switch: newState ? 1 : 0,
-        pump_speed: pumpSpeed,
-        pump_flud: pumpFluid
-    });
-
-    showToast(
-        newState ? "水泵已启动" : "水泵已停止",
-        `当前状态: ${newState ? "运行中" : "待机"}`,
-        newState ? 'success' : 'info'
-    );
+  const handlePumpToggle = () => {
+    const nextState = !pumpOn;
+    setPumpOn(nextState);
+    publishPumpControl({ pump_switch: nextState ? 1 : 0, pump_speed: pumpSpeed[0], pump_flud: pumpFlud[0] });
   };
 
-  const handlePumpSliderChange = (type: 'speed' | 'fluid', val: number) => {
-    if (type === 'speed') setPumpSpeed(val);
-    else setPumpFluid(val);
-    
-    // Continuous updates do not need toasts
-    ros2Connection.publishPumpControl({
-        pump_switch: pumpOn ? 1 : 0,
-        pump_speed: type === 'speed' ? val : pumpSpeed,
-        pump_flud: type === 'fluid' ? val : pumpFluid
-    });
+  const handlePumpParamsChange = (type: 'speed' | 'fluid', val: number[]) => {
+    if (type === 'speed') setPumpSpeed(val); else setPumpFlud(val);
+    publishPumpControl({ pump_switch: pumpOn ? 1 : 0, pump_speed: type === 'speed' ? val[0] : pumpSpeed[0], pump_flud: type === 'fluid' ? val[0] : pumpFlud[0] });
   };
 
-  const handleArmChange = (type: 'yaw' | 'roll' | 'height', val: number) => {
-    let newYaw = armYaw;
-    let newRoll = armRoll;
-    let newHeight = armHeight;
+  const handleYawChange = (val: number[]) => { setYawAngle(val); publishArmControl({ yaw_angle: val[0], roll_angle: rollAngle[0], updown_angle: updownAngle[0], arm_reset: 0 }); };
+  const handleRollChange = (val: number[]) => { setRollAngle(val); publishArmControl({ yaw_angle: yawAngle[0], roll_angle: val[0], updown_angle: updownAngle[0], arm_reset: 0 }); };
+  const handleUpdownChange = (val: number[]) => { setUpdownAngle(val); publishArmControl({ yaw_angle: yawAngle[0], roll_angle: rollAngle[0], updown_angle: val[0], arm_reset: 0 }); };
 
-    if (type === 'yaw') { setArmYaw(val); newYaw = val; }
-    if (type === 'roll') { setArmRoll(val); newRoll = val; }
-    if (type === 'height') { setArmHeight(val); newHeight = val; }
-
-    ros2Connection.publishArmControl({
-        yaw_angle: newYaw,
-        roll_angle: newRoll,
-        updown_angle: newHeight,
-        arm_reset: 0
-    });
+  const handleSemiSubmit = async () => {
+    const config = { blade_roller: parseInt(bladeRoller), direction: parseInt(direction), width, length, thickness };
+    const ack = isConnected ? await sendSemiMode(config) : 1;
+    if (ack === 1) { setIsConfigured(true); setIsStopped(false); setLastConfig(config); }
   };
 
-  const resetArm = () => {
-      setArmYaw(0);
-      setArmRoll(0);
-      setArmHeight(0);
-      ros2Connection.publishArmControl({
-          yaw_angle: 0,
-          roll_angle: 0,
-          updown_angle: 0,
-          arm_reset: 1
-      });
-      showToast("机械臂复位", "位置已重置为零点", 'info');
+  const handleHaltAction = async () => {
+      if (isStopped) { await sendStop(2); setIsStopped(false); } else { const ack = isConnected ? await sendStop(1) : 1; if (ack === 1) setIsStopped(true); }
   };
 
-  const handleDirectionStart = (dir: 'up' | 'down' | 'left' | 'right') => {
-      movementRef.current[dir] = true;
-      setMovementState(prev => ({ ...prev, [dir]: true }));
-  };
-
-  const handleDirectionEnd = (dir: 'up' | 'down' | 'left' | 'right') => {
-      movementRef.current[dir] = false;
-      setMovementState(prev => ({ ...prev, [dir]: false }));
-  };
-
-  const handleGlobalEnd = () => {
-      movementRef.current = { up: false, down: false, left: false, right: false };
-      setMovementState({ up: false, down: false, left: false, right: false });
-  };
-
-  // --- SEMI AUTO HANDLERS ---
-  const updateFloatParam = (setter: React.Dispatch<React.SetStateAction<number>>, current: number, delta: number, min: number, max: number, precision: number = 1) => {
-      const next = Math.min(max, Math.max(min, current + delta));
-      setter(parseFloat(next.toFixed(precision)));
-  };
-
-  const handleStartConstruction = async () => {
-      if (!ros2Connection.isConnected()) {
-          showToast("错误", "未连接设备", 'error');
-          return;
-      }
-      try {
-          const ack = await ros2Connection.sendSemiModeRequest(coatingType, direction, paramWidth, paramLength, paramThickness);
-          if (ack === 1) {
-              setIsConstructing(true);
-              showToast("指令已下发", "开始半自动施工流程", 'success');
-          } else {
-              showToast("启动失败", "机器未响应或拒绝指令", 'error');
-          }
-      } catch (e) {
-          console.error("Start construction failed", e);
-          showToast("通信错误", "发送施工请求失败", 'error');
-      }
-  };
-
-  const handleChangeCartridge = async () => {
-      if (!ros2Connection.isConnected()) return;
-      try {
-          const ack = await ros2Connection.sendStopRequest(2);
-          if (ack === 1) {
-              setIsConstructing(false);
-              showToast("暂停/换料", "机器已接收暂停指令", 'info');
-          }
-      } catch (e) {
-          console.error("Stop/Change Cartridge failed", e);
-      }
-  };
-
-  const isConfigValid = paramLength > 0 && paramWidth > 0 && paramThickness > 0;
-
-  // Chassis Loop
-  useEffect(() => {
-    if (!chassisEnabled) return;
-    const interval = setInterval(() => {
-        const { up, down, left, right } = movementRef.current;
-        const isMoving = up || down || left || right || zRotation !== 0;
-
-        if (isMoving) {
-            const scale = chassisSpeedSetting / 1000.0; 
-            let x_speed = 0;
-            let y_speed = 0;
-
-            // Mapping per request:
-            // Front/Back (Up/Down) -> y_speed
-            // Left/Right -> x_speed
-            
-            if (up) y_speed += scale;      
-            if (down) y_speed -= scale;    
-            if (right) x_speed += scale;   
-            if (left) x_speed -= scale;    
-            
-            const z_speed = zRotation * 30; 
-            ros2Connection.publishChassisControl({ x_speed, y_speed, z_speed });
-        }
-    }, 100);
-    return () => clearInterval(interval);
-  }, [chassisEnabled, zRotation, chassisSpeedSetting]);
-
-  useEffect(() => {
-      const { up, down, left, right } = movementState;
-      if(chassisEnabled && !up && !down && !left && !right && zRotation === 0) {
-          ros2Connection.publishChassisControl({ x_speed: 0, y_speed: 0, z_speed: 0 });
-      }
-  }, [movementState, zRotation, chassisEnabled]);
-
+  const handleSemiContinue = async () => { const ack = isConnected ? await sendStop(0) : 1; if (ack === 1) setIsStopped(false); };
 
   return (
-    <div className="flex flex-col h-full w-full select-none relative" onMouseUp={handleGlobalEnd} onTouchEnd={handleGlobalEnd}>
-      
-      {/* --- Global Toast Overlay --- */}
-      {toast && (
-        <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl border backdrop-blur-md shadow-2xl transition-all animate-in fade-in slide-in-from-top-4 flex items-center gap-3 ${
-            toast.type === 'error' ? 'bg-red-950/90 border-red-500 text-red-100' :
-            toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500 text-emerald-100' :
-            'bg-slate-900/90 border-sci-blue text-slate-100'
-        }`}>
-            {toast.type === 'error' && <AlertCircle size={20} />}
-            {toast.type === 'success' && <CheckCircle2 size={20} />}
-            {toast.type === 'info' && <Info size={20} />}
-            <div>
-                <div className="font-bold text-sm">{toast.title}</div>
-                <div className="text-xs opacity-80">{toast.desc}</div>
-            </div>
-        </div>
-      )}
-
-      {/* --- Compact Tab Switcher --- */}
-      <div className="flex justify-center mb-1 shrink-0">
-          <div className="bg-slate-900/80 p-1 rounded-full border border-slate-700 shadow-md flex gap-1 backdrop-blur-sm">
-            <button
-              onClick={() => handleTabChange('MANUAL')}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                activeTab === 'MANUAL' 
-                  ? 'bg-sci-blue text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]' 
-                  : 'text-slate-500 hover:text-sci-blue'
-              }`}
-            >
-              手动控制
-            </button>
-            <button
-              onClick={() => handleTabChange('SEMI')}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                activeTab === 'SEMI' 
-                  ? 'bg-sci-purple text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]' 
-                  : 'text-slate-500 hover:text-sci-purple'
-              }`}
-            >
-              半自动施工
-            </button>
+    <div className="flex flex-col h-full w-full select-none relative animate-in fade-in duration-700 overflow-y-auto custom-scrollbar" onMouseUp={handleDirEnd} onTouchEnd={handleDirEnd}>
+      {/* 顶部导航 */}
+      <div className="flex justify-center mb-6 shrink-0 px-4 mt-2">
+          <div className="bg-slate-900/80 p-1 rounded-full border border-slate-700 flex gap-1 backdrop-blur-3xl shadow-2xl">
+            <button onClick={() => handleTabChange('MANUAL')} className={`px-8 py-2.5 rounded-full text-[10px] font-black tracking-widest transition-all ${activeTab === 'MANUAL' ? 'bg-sci-blue text-white shadow-lg' : 'text-slate-500 hover:text-sci-blue'}`}>MANUAL_DRIVE</button>
+            <button onClick={() => handleTabChange('SEMI')} className={`px-8 py-2.5 rounded-full text-[10px] font-black tracking-widest transition-all ${activeTab === 'SEMI' ? 'bg-sci-purple text-white shadow-lg' : 'text-slate-500 hover:text-sci-purple'}`}>AUTO_PROC_SEMI</button>
           </div>
       </div>
 
       {activeTab === 'MANUAL' ? (
-        // === MANUAL QUADRANT LAYOUT ===
-        <div className="flex-1 grid grid-cols-2 grid-rows-[auto_1fr] gap-2 min-h-0 pb-1">
-            
-            {/* 1. TOP LEFT: Device Enable (Compact) */}
-            <div className="glass-panel rounded-2xl p-3 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-2 text-sci-cyan text-[10px] font-bold uppercase tracking-wider neon-text">
-                    <Power size={12} /> 系统使能
+        <div className="flex-1 flex flex-col gap-6 px-4 pb-12 md:px-8">
+            {/* 第一行：状态切换 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="glass-panel rounded-3xl p-5 flex flex-col justify-center relative shadow-xl">
+                    <div className="flex items-center gap-2 mb-4 text-sci-cyan text-[10px] font-black uppercase tracking-widest neon-text"><Power size={14} /> Power Matrix</div>
+                    <div className="flex gap-4">
+                        <button onClick={onChassisToggle} className={`flex-1 py-4 rounded-2xl font-black text-[10px] flex flex-col items-center justify-center gap-2 transition-all border-2 ${chassisEnabled ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/40 border-slate-700 text-slate-600'}`}>
+                            <Move size={18} /> {chassisEnabled ? 'DRIVE_ON' : 'DRIVE_LOCK'}
+                        </button>
+                        <button onClick={onArmToggle} className={`flex-1 py-4 rounded-2xl font-black text-[10px] flex flex-col items-center justify-center gap-2 transition-all border-2 ${armEnabled ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/40 border-slate-700 text-slate-600'}`}>
+                            <GitCommit size={18} /> {armEnabled ? 'ARM_ACTIVE' : 'ARM_IDLE'}
+                        </button>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <button 
-                        onClick={toggleChassis}
-                        className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all border ${
-                            chassisEnabled 
-                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
-                            : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'
-                        }`}
-                    >
-                        <Move size={16} />
-                        {chassisEnabled ? '底盘 ON' : '底盘 OFF'}
-                    </button>
-                    <button 
-                            onClick={toggleArm}
-                            className={`flex-1 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all border ${
-                                armEnabled 
-                                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
-                                : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'
-                            }`}
-                    >
-                        <GitCommit size={16} />
-                        {armEnabled ? '机械臂 ON' : '机械臂 OFF'}
-                    </button>
+
+                <div className="glass-panel rounded-3xl p-5 flex flex-col justify-center relative shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 text-sci-cyan text-[10px] font-black uppercase tracking-widest neon-text"><Droplets size={14} /> Fluid Inject</div>
+                        <button onClick={handlePumpToggle} className={`w-14 h-7 rounded-full transition-all relative ${pumpOn ? 'bg-sci-cyan shadow-lg' : 'bg-slate-800'}`}><div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white transition-all ${pumpOn ? 'left-7.5' : 'left-0.5'}`} /></button>
+                    </div>
+                    <div className="flex gap-4">
+                        <input type="range" min="0" max="200" value={pumpSpeed[0]} onChange={(e) => handlePumpParamsChange('speed', [parseInt(e.target.value)])} className="flex-1 accent-sci-cyan h-2 rounded-full appearance-none bg-slate-800" disabled={!pumpOn} />
+                        <input type="range" min="0" max="12" step="0.1" value={pumpFlud[0]} onChange={(e) => handlePumpParamsChange('fluid', [parseFloat(e.target.value)])} className="flex-1 accent-sci-cyan h-2 rounded-full appearance-none bg-slate-800" disabled={!pumpOn} />
+                    </div>
                 </div>
             </div>
 
-            {/* 2. TOP RIGHT: Pump Control (Compact) */}
-            <div className="glass-panel rounded-2xl p-3 flex flex-col justify-center">
-                 <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-sci-cyan text-[10px] font-bold uppercase tracking-wider neon-text">
-                        <Droplets size={12} /> 水泵控制
+            {/* 第二行：核心底盘控制 (响应式堆叠) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 左侧：D-Pad 导航控制 */}
+                <div className={`glass-panel rounded-[3rem] p-8 flex flex-col items-center transition-all min-h-[400px] ${!chassisEnabled ? 'opacity-20 pointer-events-none grayscale' : 'shadow-2xl'}`}>
+                    <div className="w-full text-left mb-8 flex items-center gap-3">
+                        <div className="w-1 h-4 bg-sci-blue rounded-full"></div>
+                        <span className="text-[10px] font-black text-slate-500 tracking-[0.4em] uppercase">Kinetic_Nav_Matrix</span>
                     </div>
-                    <button 
-                             onClick={togglePump}
-                             className={`w-10 h-5 rounded-full transition-all relative shadow-inner ${pumpOn ? 'bg-sci-cyan shadow-[0_0_10px_rgba(6,182,212,0.6)]' : 'bg-slate-700'}`}
+
+                    {/* D-Pad 容器：使用布局而非绝对定位避免重叠 */}
+                    <div className="relative flex flex-col items-center gap-4 py-4">
+                        {/* Up */}
+                        <button 
+                            onMouseDown={() => handleDirStart('f')} onTouchStart={() => handleDirStart('f')}
+                            className={`w-20 h-20 rounded-2xl bg-slate-800 border-2 flex items-center justify-center transition-all ${activeDirection === 'f' ? 'bg-sci-blue border-sci-blue text-white shadow-blue-500/50 shadow-xl scale-110' : 'border-slate-700 text-slate-500'}`}
                         >
-                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${pumpOn ? 'left-5.5' : 'left-0.5'}`} />
-                    </button>
-                </div>
-                <div className="flex gap-3 items-center">
-                    <div className="flex-1 space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-400 font-bold">
-                            <span>速度</span> <span className="text-sci-cyan">{pumpSpeed}</span>
+                            <ChevronUp size={40} />
+                        </button>
+                        
+                        <div className="flex items-center gap-4">
+                            {/* CCW 侧翼 */}
+                            <button 
+                                onMouseDown={() => handleDirStart('ccw')} onTouchStart={() => handleDirStart('ccw')}
+                                className={`w-16 h-16 rounded-full bg-slate-900 border-2 flex flex-col items-center justify-center transition-all ${activeDirection === 'ccw' ? 'bg-sci-cyan border-sci-cyan text-white shadow-cyan-500/50 shadow-lg' : 'border-slate-800 text-slate-600'}`}
+                            >
+                                <RotateCcw size={24} />
+                                <span className="text-[7px] font-black mt-1">CCW</span>
+                            </button>
+
+                            <div className="flex flex-col gap-4">
+                                <div className="flex gap-4">
+                                    {/* Left */}
+                                    <button 
+                                        onMouseDown={() => handleDirStart('l')} onTouchStart={() => handleDirStart('l')}
+                                        className={`w-20 h-20 rounded-2xl bg-slate-800 border-2 flex items-center justify-center transition-all ${activeDirection === 'l' ? 'bg-sci-blue border-sci-blue text-white shadow-blue-500/50 shadow-xl scale-110' : 'border-slate-700 text-slate-500'}`}
+                                    >
+                                        <ChevronLeft size={40} />
+                                    </button>
+                                    {/* Center Dot */}
+                                    <div className="w-20 h-20 rounded-2xl bg-slate-950/50 flex items-center justify-center border border-slate-800">
+                                        <div className={`w-3 h-3 rounded-full ${activeDirection ? 'bg-sci-blue animate-ping' : 'bg-slate-800'}`} />
+                                    </div>
+                                    {/* Right */}
+                                    <button 
+                                        onMouseDown={() => handleDirStart('r')} onTouchStart={() => handleDirStart('r')}
+                                        className={`w-20 h-20 rounded-2xl bg-slate-800 border-2 flex items-center justify-center transition-all ${activeDirection === 'r' ? 'bg-sci-blue border-sci-blue text-white shadow-blue-500/50 shadow-xl scale-110' : 'border-slate-700 text-slate-500'}`}
+                                    >
+                                        <ChevronRight size={40} />
+                                    </button>
+                                </div>
+                                {/* Down */}
+                                <div className="flex justify-center">
+                                    <button 
+                                        onMouseDown={() => handleDirStart('b')} onTouchStart={() => handleDirStart('b')}
+                                        className={`w-20 h-20 rounded-2xl bg-slate-800 border-2 flex items-center justify-center transition-all ${activeDirection === 'b' ? 'bg-sci-blue border-sci-blue text-white shadow-blue-500/50 shadow-xl scale-110' : 'border-slate-700 text-slate-500'}`}
+                                    >
+                                        <ChevronDown size={40} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* CW 侧翼 */}
+                            <button 
+                                onMouseDown={() => handleDirStart('cw')} onTouchStart={() => handleDirStart('cw')}
+                                className={`w-16 h-16 rounded-full bg-slate-900 border-2 flex flex-col items-center justify-center transition-all ${activeDirection === 'cw' ? 'bg-sci-cyan border-sci-cyan text-white shadow-cyan-500/50 shadow-lg' : 'border-slate-800 text-slate-600'}`}
+                            >
+                                <RotateCw size={24} />
+                                <span className="text-[7px] font-black mt-1">CW</span>
+                            </button>
                         </div>
-                        <input type="range" min="0" max="200" value={pumpSpeed}
-                            onChange={(e) => handlePumpSliderChange('speed', parseInt(e.target.value))}
-                            className="w-full accent-sci-cyan h-1.5 bg-slate-700 rounded-lg appearance-none" />
                     </div>
-                    <div className="flex-1 space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-400 font-bold">
-                            <span>容量</span> <span className="text-sci-cyan">{pumpFluid}</span>
+
+                    {/* 速度控制条：底部独立区域 */}
+                    <div className="w-full mt-12 bg-slate-950/60 p-5 rounded-3xl border border-white/5 flex flex-col items-center gap-4">
+                        <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">Kinetic_Speed_Setpoint (mm/s)</span>
+                        <div className="w-full flex items-center gap-6">
+                            <button onClick={() => adjustValue(speed, -0.1, 0, 4, setSpeed)} className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 active:scale-90"><Minus size={20}/></button>
+                            <span className="flex-1 text-center text-4xl font-black text-sci-blue font-mono drop-shadow-lg">{(speed * 1000).toFixed(0)}</span>
+                            <button onClick={() => adjustValue(speed, 0.1, 0, 4, setSpeed)} className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 active:scale-90"><Plus size={20}/></button>
                         </div>
-                        <input type="range" min="0" max="12" value={pumpFluid}
-                            onChange={(e) => handlePumpSliderChange('fluid', parseInt(e.target.value))}
-                            className="w-full accent-sci-cyan h-1.5 bg-slate-700 rounded-lg appearance-none" />
+                    </div>
+                </div>
+
+                {/* 右侧：3D 孪生可视化 */}
+                <div className={`glass-panel rounded-[3rem] overflow-hidden flex flex-col min-h-[450px] transition-all duration-500 ${!armEnabled ? 'opacity-20 pointer-events-none grayscale' : 'shadow-2xl'}`}>
+                    <div className="flex-1 relative z-0">
+                         <RobotArmViz yaw={yawAngle[0]} roll={rollAngle[0]} height={updownAngle[0]} enabled={armEnabled} />
+                    </div>
+                    
+                    {/* 控制面板固定在视觉反馈下方 */}
+                    <div className="p-6 bg-slate-900/95 backdrop-blur-3xl border-t border-slate-800/50 flex flex-col gap-6 z-10">
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="flex flex-col items-center bg-slate-950/80 p-3 rounded-2xl border border-white/5">
+                                <span className="text-[8px] font-black text-slate-500 mb-1 uppercase tracking-tighter">Yaw Angle</span>
+                                <span className="text-sm font-black text-sci-purple font-mono">{yawAngle[0]}°</span>
+                            </div>
+                            <div className="flex flex-col items-center bg-slate-950/80 p-3 rounded-2xl border border-white/5">
+                                <span className="text-[8px] font-black text-slate-500 mb-1 uppercase tracking-tighter">Roll Angle</span>
+                                <span className="text-sm font-black text-sci-purple font-mono">{rollAngle[0]}°</span>
+                            </div>
+                            <div className="flex flex-col items-center bg-slate-950/80 p-3 rounded-2xl border border-white/5">
+                                <span className="text-[8px] font-black text-slate-500 mb-1 uppercase tracking-tighter">Vertical Lift</span>
+                                <span className="text-sm font-black text-sci-purple font-mono">{updownAngle[0]} cm</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-6 px-2 py-2">
+                             <div className="space-y-2">
+                                <input type="range" min="-90" max="90" value={yawAngle[0]} onChange={(e) => handleYawChange([parseInt(e.target.value)])} className="w-full h-2 accent-sci-purple bg-slate-800 rounded-full appearance-none" />
+                                <div className="flex justify-between text-[8px] font-bold text-slate-600 px-1"><span>-90°</span><span>0°</span><span>+90°</span></div>
+                             </div>
+                             <div className="space-y-2">
+                                <input type="range" min="-180" max="180" value={rollAngle[0]} onChange={(e) => handleRollChange([parseInt(e.target.value)])} className="w-full h-2 accent-sci-purple bg-slate-800 rounded-full appearance-none" />
+                                <div className="flex justify-between text-[8px] font-bold text-slate-600 px-1"><span>-180°</span><span>0°</span><span>+180°</span></div>
+                             </div>
+                             <div className="space-y-2">
+                                <input type="range" min="0" max="8" step="0.1" value={updownAngle[0]} onChange={(e) => handleUpdownChange([parseFloat(e.target.value)])} className="w-full h-2 accent-sci-purple bg-slate-800 rounded-full appearance-none" />
+                                <div className="flex justify-between text-[8px] font-bold text-slate-600 px-1"><span>0 CM</span><span>4 CM</span><span>8 CM</span></div>
+                             </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {/* 3. BOTTOM LEFT: Chassis Drive (Maximised Control Area) */}
-            <div className={`glass-panel rounded-2xl p-2 relative flex flex-col items-center justify-center transition-opacity ${!chassisEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                 <div className="absolute top-2 left-3 text-slate-500 text-[10px] font-bold">DRIVE_SYSTEM</div>
-                 
-                 <div className="flex items-center gap-6">
-                    {/* Rotation Left */}
-                    <button 
-                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation > 0 ? 'bg-sci-blue text-white border-sci-blue shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
-                        onMouseDown={() => setZRotation(1)} onMouseUp={() => setZRotation(0)} onMouseLeave={() => setZRotation(0)}
-                        onTouchStart={(e) => { e.preventDefault(); setZRotation(1); }} onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
-                    >
-                        <RotateCcw size={20} />
-                    </button>
-
-                    {/* D-PAD - Dark Style */}
-                    <div className="w-32 h-32 relative">
-                         <div className="absolute inset-0 bg-slate-800/30 rounded-full border border-slate-700/50"></div>
-                         {/* Up */}
-                         <button className={`absolute top-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-t-lg flex items-start justify-center pt-1 transition-colors ${movementState.up ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-b-0'}`}
-                            onMouseDown={() => handleDirectionStart('up')} onMouseUp={() => handleDirectionEnd('up')} onMouseLeave={() => handleDirectionEnd('up')}
-                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('up'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('up'); }}
-                         ><ChevronUp size={24} /></button>
-                         {/* Down */}
-                         <button className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-12 rounded-b-lg flex items-end justify-center pb-1 transition-colors ${movementState.down ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-t-0'}`}
-                            onMouseDown={() => handleDirectionStart('down')} onMouseUp={() => handleDirectionEnd('down')} onMouseLeave={() => handleDirectionEnd('down')}
-                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('down'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('down'); }}
-                         ><ChevronDown size={24} /></button>
-                         {/* Left */}
-                         <button className={`absolute left-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-l-lg flex items-center justify-start pl-1 transition-colors ${movementState.left ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-r-0'}`}
-                            onMouseDown={() => handleDirectionStart('left')} onMouseUp={() => handleDirectionEnd('left')} onMouseLeave={() => handleDirectionEnd('left')}
-                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('left'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('left'); }}
-                         ><ChevronLeft size={24} /></button>
-                         {/* Right */}
-                         <button className={`absolute right-0 top-1/2 -translate-y-1/2 w-12 h-10 rounded-r-lg flex items-center justify-end pr-1 transition-colors ${movementState.right ? 'bg-sci-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 border-l-0'}`}
-                            onMouseDown={() => handleDirectionStart('right')} onMouseUp={() => handleDirectionEnd('right')} onMouseLeave={() => handleDirectionEnd('right')}
-                            onTouchStart={(e) => { e.preventDefault(); handleDirectionStart('right'); }} onTouchEnd={(e) => { e.preventDefault(); handleDirectionEnd('right'); }}
-                         ><ChevronRight size={24} /></button>
-                    </div>
-
-                    {/* Rotation Right */}
-                    <button 
-                        className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${zRotation < 0 ? 'bg-sci-blue text-white border-sci-blue shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:bg-slate-700'}`}
-                        onMouseDown={() => setZRotation(-1)} onMouseUp={() => setZRotation(0)} onMouseLeave={() => setZRotation(0)}
-                        onTouchStart={(e) => { e.preventDefault(); setZRotation(-1); }} onTouchEnd={(e) => { e.preventDefault(); setZRotation(0); }}
-                    >
-                        <RotateCw size={20} />
-                    </button>
-                 </div>
-
-                 {/* Speed Slider */}
-                 <div className="absolute bottom-3 left-6 right-6 flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-slate-500 w-8">SPD</span>
-                    <input type="range" min="0" max="1000" step="50" value={chassisSpeedSetting}
-                        onChange={(e) => setChassisSpeedSetting(parseInt(e.target.value))}
-                        className="flex-1 accent-sci-blue h-1.5 bg-slate-700 rounded-lg appearance-none" />
-                    <span className="text-[10px] font-bold text-sci-blue w-8 text-right">{chassisSpeedSetting}</span>
-                 </div>
-            </div>
-
-            {/* 4. BOTTOM RIGHT: Arm Control (Viz Background + Floating Controls) */}
-            <div className={`glass-panel rounded-2xl relative overflow-hidden flex flex-col transition-opacity ${!armEnabled ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                 <div className="absolute inset-0 z-0">
-                    <RobotArmViz yaw={armYaw} roll={armRoll} height={armHeight} enabled={armEnabled} />
-                 </div>
-                 
-                 {/* Floating Overlay Controls - Dark Glass */}
-                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-slate-900/80 backdrop-blur-md border-t border-slate-700 z-10 flex flex-col gap-2">
-                    <div className="flex gap-2 text-[10px] font-bold text-slate-400 mb-1">
-                        <span className="flex-1 text-center">YAW ({armYaw}°)</span>
-                        <span className="flex-1 text-center">ROLL ({armRoll}°)</span>
-                        <span className="flex-1 text-center">LIFT ({armHeight}cm)</span>
-                    </div>
-                    <div className="flex gap-2">
-                         <input type="range" min="-90" max="90" value={armYaw} onChange={(e) => handleArmChange('yaw', parseInt(e.target.value))}
-                            className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
-                         <input type="range" min="-180" max="180" value={armRoll} onChange={(e) => handleArmChange('roll', parseInt(e.target.value))}
-                            className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
-                         <input type="range" min="0" max="8" value={armHeight} onChange={(e) => handleArmChange('height', parseInt(e.target.value))}
-                            className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
-                    </div>
-                    <button onClick={resetArm} className="absolute top-[-30px] right-2 bg-slate-800/90 p-1.5 rounded-lg shadow-sm text-xs font-bold text-sci-purple border border-sci-purple/30 hover:bg-slate-700">
-                        RESET
-                    </button>
-                 </div>
-            </div>
-
         </div>
       ) : (
-        // === SEMI AUTO 3-COLUMN LAYOUT ===
-        <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 px-1 pb-1">
-            
-            {/* Col 1: Config (Compact) */}
-            <div className="col-span-3 glass-panel rounded-2xl p-3 flex flex-col gap-4">
-                 <div className="text-sci-purple text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 neon-text">
-                    <Activity size={12} /> 模式配置
+        <div className="flex-1 flex flex-col gap-6 px-4 pb-12 md:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="glass-panel rounded-3xl p-6 flex flex-col gap-6 shadow-xl relative overflow-hidden">
+                    <div className="text-sci-purple text-[10px] font-black uppercase tracking-widest flex items-center gap-2 neon-text"><Activity size={16} /> Proc_Method</div>
+                    <div className="flex flex-col gap-3">
+                        <button onClick={() => setBladeRoller("0")} className={`w-full py-4 rounded-2xl text-[10px] font-black border-2 transition-all ${bladeRoller === "0" ? 'bg-sci-purple/20 border-sci-purple text-sci-purple shadow-lg' : 'bg-slate-800 text-slate-600 border-slate-700'}`}>刮涂 / Blade Coating</button>
+                        <button onClick={() => setBladeRoller("1")} className={`w-full py-4 rounded-2xl text-[10px] font-black border-2 transition-all ${bladeRoller === "1" ? 'bg-sci-purple/20 border-sci-purple text-sci-purple shadow-lg' : 'bg-slate-800 text-slate-600 border-slate-700'}`}>辊涂 / Roller Coating</button>
+                    </div>
                 </div>
+
+                {/* 核心参数调节区：重构为 3 列响应式布局 */}
+                <div className="md:col-span-2 glass-panel rounded-3xl p-8 flex flex-col justify-center gap-8 shadow-xl">
+                     <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border-l-4 border-slate-700 pl-4"><Ruler size={16} /> Process_Geometry_X_Y_Z</div>
+                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                        {/* Length */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-end"><span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Length (m)</span><span className="text-3xl font-black text-sci-blue font-mono">{length}</span></div>
+                            <input type="range" min="0" max="20" step="0.1" value={length} onChange={(e) => setLength(parseFloat(e.target.value))} className="w-full accent-sci-blue h-2" disabled={isConfigured} />
+                        </div>
+                        {/* Width */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-end"><span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Width (m)</span><span className="text-3xl font-black text-sci-blue font-mono">{width}</span></div>
+                            <input type="range" min="0" max="2.6" step="0.1" value={width} onChange={(e) => setWidth(parseFloat(e.target.value))} className="w-full accent-sci-blue h-2" disabled={isConfigured} />
+                        </div>
+                        {/* Thickness - 补全缺失参数 */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-end gap-2">
+                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1"><Layers size={12} /> Thick (mm)</span>
+                                <span className="text-3xl font-black text-sci-purple font-mono">{thickness}</span>
+                            </div>
+                            <input type="range" min="0" max="10" step="0.1" value={thickness} onChange={(e) => setThickness(parseFloat(e.target.value))} className="w-full accent-sci-purple h-2 shadow-[0_0_10px_rgba(168,85,247,0.2)]" disabled={isConfigured} />
+                        </div>
+                     </div>
+                </div>
+            </div>
+
+            <div className="glass-panel rounded-[3rem] p-10 flex flex-col items-center justify-center gap-10 shadow-2xl relative overflow-hidden bg-slate-900/40">
+                {!isConfigured ? (
+                     <button onClick={handleSemiSubmit} className="w-full max-w-sm h-48 rounded-[3.5rem] font-black text-3xl flex flex-col items-center justify-center gap-6 transition-all bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-emerald-500/50 shadow-2xl hover:scale-105 active:scale-95">
+                        <Play size={80} fill="currentColor" /><span className="tracking-widest">INIT_START</span>
+                    </button>
+                ) : (
+                    <button 
+                        onClick={handleHaltAction} 
+                        className={`w-full max-w-sm h-48 rounded-[3.5rem] font-black text-3xl flex flex-col items-center justify-center gap-6 transition-all shadow-2xl active:scale-95 ${
+                            isStopped 
+                            ? 'bg-gradient-to-br from-sci-blue to-sci-cyan text-white shadow-sci-blue/50 shadow-2xl' 
+                            : 'bg-gradient-to-br from-red-600 to-red-800 text-white shadow-red-500/50 shadow-2xl'
+                        }`}
+                    >
+                        {isStopped ? <Rotate3d size={80} /> : <Octagon size={80} />}
+                        <span className="tracking-widest font-black uppercase">
+                            {isStopped ? 'RELOAD_PROC' : 'CORE_HALT'}
+                        </span>
+                    </button>
+                )}
                 
-                <div className="flex flex-col gap-2 flex-1">
-                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-slate-500 font-bold">工艺</span>
-                        <div className="flex gap-1">
-                            <button onClick={() => setCoatingType(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${coatingType === 0 ? 'bg-sci-purple/20 border-sci-purple text-sci-purple' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>刮涂</button>
-                            <button onClick={() => setCoatingType(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${coatingType === 1 ? 'bg-sci-purple/20 border-sci-purple text-sci-purple' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>辊涂</button>
-                        </div>
-                     </div>
-                     <div className="flex flex-col gap-1 mt-2">
-                        <span className="text-[10px] text-slate-500 font-bold">方向</span>
-                        <div className="flex gap-1">
-                            <button onClick={() => setDirection(0)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${direction === 0 ? 'bg-sci-blue/20 border-sci-blue text-sci-blue' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>向左</button>
-                            <button onClick={() => setDirection(1)} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${direction === 1 ? 'bg-sci-blue/20 border-sci-blue text-sci-blue' : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800'}`}>向右</button>
-                        </div>
-                     </div>
-                </div>
-            </div>
+                {isStopped && (
+                    <button onClick={handleSemiContinue} className="text-sci-cyan text-xs font-black underline animate-pulse uppercase tracking-[0.2em] hover:text-white transition-colors">Resume Autonomous Mission</button>
+                )}
 
-            {/* Col 2: Params (Sliders) */}
-            <div className="col-span-5 glass-panel rounded-2xl p-3 flex flex-col justify-center gap-4">
-                 <div className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Ruler size={12} /> 施工参数
-                </div>
-                <div className="space-y-4">
-                    {/* Length */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-bold">
-                             <span className="text-slate-500">长度 (m)</span>
-                             <span className="text-sci-blue">{paramLength}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => updateFloatParam(setParamLength, paramLength, -0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">-</button>
-                            <input type="range" min="0" max="40" step="0.5" value={paramLength} onChange={(e) => setParamLength(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-700 rounded-lg appearance-none" />
-                            <button onClick={() => updateFloatParam(setParamLength, paramLength, 0.5, 0, 40)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">+</button>
-                        </div>
+                <div className="flex items-start gap-4 p-6 bg-slate-950/80 rounded-[2.5rem] border border-white/5 w-full max-w-2xl shadow-inner">
+                    <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center border border-slate-800 shrink-0 mt-1">
+                        <Info size={20} className="text-sci-blue" />
                     </div>
-                    {/* Width */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-bold">
-                             <span className="text-slate-500">宽度 (m)</span>
-                             <span className="text-sci-blue">{paramWidth}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, -0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">-</button>
-                            <input type="range" min="0" max="2.4" step="0.1" value={paramWidth} onChange={(e) => setParamWidth(parseFloat(e.target.value))} className="flex-1 accent-sci-blue h-1.5 bg-slate-700 rounded-lg appearance-none" />
-                            <button onClick={() => updateFloatParam(setParamWidth, paramWidth, 0.1, 0, 2.4)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">+</button>
-                        </div>
-                    </div>
-                     {/* Thickness */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-bold">
-                             <span className="text-slate-500">厚度 (mm)</span>
-                             <span className="text-sci-purple">{paramThickness}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, -0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">-</button>
-                            <input type="range" min="0" max="20" step="0.5" value={paramThickness} onChange={(e) => setParamThickness(parseFloat(e.target.value))} className="flex-1 accent-sci-purple h-1.5 bg-slate-700 rounded-lg appearance-none" />
-                            <button onClick={() => updateFloatParam(setParamThickness, paramThickness, 0.5, 0, 20)} className="w-6 h-6 rounded bg-slate-800 text-slate-400 font-bold hover:bg-slate-700">+</button>
-                        </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Telemetry_Status</span>
+                        <p className="text-[11px] text-slate-500 font-bold leading-relaxed uppercase tracking-tight">
+                            {isStopped ? "CORE HALTED. STANDBY FOR RELOAD OR RESUMPTION COMMANDS." : isConfigured ? "AUTONOMOUS PATHING ACTIVE. TELEMETRY SYNCHRONIZED WITH HUD." : "CONSTRUCT SEQUENCE PARAMETERS BEFORE INITIATING START COMMAND."}
+                        </p>
                     </div>
                 </div>
             </div>
-
-            {/* Col 3: Action */}
-            <div className="col-span-4 glass-panel rounded-2xl p-3 flex flex-col relative overflow-hidden">
-                 <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 mb-2">
-                    <Play size={12} /> 执行控制
-                </div>
-
-                <div className="flex-1 flex flex-col justify-center items-center">
-                    {!isConstructing ? (
-                         <button
-                            onClick={handleStartConstruction}
-                            disabled={!isConfigValid}
-                            className={`w-full h-full max-h-[160px] rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${
-                                isConfigValid 
-                                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95' 
-                                : 'bg-slate-800/50 text-slate-600 cursor-not-allowed border border-slate-700'
-                            }`}
-                        >
-                            <Play size={32} fill="currentColor" />
-                            <span>开始施工</span>
-                        </button>
-                    ) : (
-                        <button
-                            onClick={handleChangeCartridge}
-                            className="w-full h-full max-h-[160px] rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all bg-gradient-to-br from-red-500 to-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.5)] active:scale-95 animate-pulse"
-                        >
-                            <RefreshCw size={32} className="animate-spin-slow" />
-                            <span>紧急停止 / 换料</span>
-                        </button>
-                    )}
-                </div>
-            </div>
-
         </div>
       )}
     </div>

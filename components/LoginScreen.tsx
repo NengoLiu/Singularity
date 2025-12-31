@@ -10,7 +10,7 @@ interface LoginScreenProps {
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false }) => {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [robotIp, setRobotIp] = useState('192.168.1.100'); // Default placeholder
+  const [robotIp, setRobotIp] = useState('192.168.4.1'); // Default placeholder
   const [password, setPassword] = useState('');
 
   // Auto-rotate carousel
@@ -49,7 +49,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
                     <span>Singularity OS v2.0</span>
                 </div>
               <h2 className="text-4xl font-black italic tracking-tighter text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] mb-2 neon-text">
-                {item.title}
+                {item.title} 
               </h2>
               <p className="text-slate-300 font-medium text-sm max-w-md mx-auto drop-shadow-md">{item.description}</p>
             </div>
